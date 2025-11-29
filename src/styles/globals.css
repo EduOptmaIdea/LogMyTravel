@@ -1,0 +1,301 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* === PALETA DE CORES LOGMYTRAVEL === */
+  
+  /* Branco/Off-White - 60% - Fundos, Cards, Conteúdo */
+  --color-neutral-white: #FFFFFF;
+  --color-neutral-off-white: #F4F6FF;
+  
+  /* Azul Profundo - 30% - Primária (Marca, Navegação, Botões, Texto) */
+  --color-primary-deep-blue: #192A56;
+  --color-primary-deep-blue-hover: #0f1d3a;
+  --color-primary-deep-blue-light: #2c3e6f;
+  
+  /* Fuchsia/Magenta - 7% - Acento 1, Ações */
+  --color-accent-fuchsia: #c026d3;
+  --color-accent-fuchsia-hover: #a21caf;
+  --color-accent-fuchsia-light: #d946ef;
+  
+  /* Roxo/Magenta - 3% - Destaque, Acento 2 */
+  --color-accent-purple: #8E44AD;
+  --color-accent-purple-hover: #732d91;
+  --color-accent-purple-light: #a569bd;
+  
+  /* Cores de Apoio */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  
+  /* Cores de Status */
+  --color-success: #2ECC71;
+  --color-warning: #f39c12;
+  --color-error: #e74c3c;
+  --color-info: #3498db;
+  --color-teal: #0d9488;
+  
+  /* === APLICAÇÃO NO DESIGN SYSTEM === */
+  --font-size: 16px;
+  --background: var(--color-neutral-off-white);
+  --foreground: var(--color-primary-deep-blue);
+  
+  --card: var(--color-neutral-white);
+  --card-foreground: var(--color-primary-deep-blue);
+  
+  --popover: var(--color-neutral-white);
+  --popover-foreground: var(--color-primary-deep-blue);
+  
+  --primary: var(--color-primary-deep-blue);
+  --primary-foreground: var(--color-neutral-white);
+  
+  --secondary: var(--color-accent-fuchsia);
+  --secondary-foreground: var(--color-neutral-white);
+  
+  --muted: var(--color-gray-100);
+  --muted-foreground: var(--color-gray-500);
+  
+  --accent: var(--color-accent-purple);
+  --accent-foreground: var(--color-neutral-white);
+  
+  --destructive: var(--color-error);
+  --destructive-foreground: var(--color-neutral-white);
+  
+  --border: var(--color-gray-200);
+  --input: transparent;
+  --input-background: var(--color-neutral-white);
+  --switch-background: var(--color-gray-300);
+  
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  
+  --ring: var(--color-primary-deep-blue);
+  
+  /* Charts usando as cores da paleta */
+  --chart-1: var(--color-primary-deep-blue);
+  --chart-2: var(--color-accent-fuchsia);
+  --chart-3: var(--color-accent-purple);
+  --chart-4: #f39c12;
+  --chart-5: #3498db;
+  
+  --radius: 0.75rem;
+  
+  --sidebar: var(--color-primary-deep-blue);
+  --sidebar-foreground: var(--color-neutral-white);
+  --sidebar-primary: var(--color-accent-fuchsia);
+  --sidebar-primary-foreground: var(--color-neutral-white);
+  --sidebar-accent: var(--color-primary-deep-blue-light);
+  --sidebar-accent-foreground: var(--color-neutral-white);
+  --sidebar-border: var(--color-primary-deep-blue-light);
+  --sidebar-ring: var(--color-accent-fuchsia);
+}
+
+.dark {
+  --background: var(--color-primary-deep-blue);
+  --foreground: var(--color-neutral-white);
+  --card: #0f1d3a;
+  --card-foreground: var(--color-neutral-white);
+  --popover: #0f1d3a;
+  --popover-foreground: var(--color-neutral-white);
+  --primary: var(--color-accent-fuchsia);
+  --primary-foreground: var(--color-neutral-white);
+  --secondary: var(--color-accent-purple);
+  --secondary-foreground: var(--color-neutral-white);
+  --muted: var(--color-gray-700);
+  --muted-foreground: var(--color-gray-400);
+  --accent: var(--color-accent-purple);
+  --accent-foreground: var(--color-neutral-white);
+  --destructive: var(--color-error);
+  --destructive-foreground: var(--color-neutral-white);
+  --border: var(--color-gray-700);
+  --input: var(--color-gray-700);
+  --ring: var(--color-accent-fuchsia);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: var(--color-accent-fuchsia);
+  --chart-2: var(--color-accent-purple);
+  --chart-3: #3498db;
+  --chart-4: #f39c12;
+  --chart-5: var(--color-primary-deep-blue-light);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  
+  /* Fonte Montserrat para destaques (headings) */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', 'Roboto', sans-serif;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      line-height: 1.3;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: 600;
+      line-height: 1.4;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      line-height: 1.4;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: 600;
+      line-height: 1.5;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.6;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    label {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      line-height: 1.5;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: 500;
+      line-height: 1.5;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+      font-family: 'Roboto', sans-serif;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Utility classes para fontes */
+.font-heading {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.font-body {
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Animação de entrada suave */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar com cores da paleta */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-off-white);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}

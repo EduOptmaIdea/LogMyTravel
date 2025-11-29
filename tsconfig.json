@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noImplicitAny": true,
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src"]
+  ,
+  "exclude": [
+    "src/supabase/functions",
+    "src/supabase/functions/**",
+    "src/supabase/functions/**/*",
+    "src/LICENSE/**"
+  ]
+}

@@ -1,0 +1,39 @@
+# Node/Vite
+node_modules/
+dist/
+build/
+.vite/
+.cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env files
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+
+# IDE/OS
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# Tailwind/PostCSS
+.tailwindcache/
+
+# Supabase (evitar credenciais hardcoded)
+src/utils/supabase/info.tsx
+
+# Misc
+*.local
+*.tmp
+*.swp
+/# Ignorar pasta de fluxos do app
+/fluxos_do_app/
+/supabase_templates/

@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+# Optional: Use Node 20 for Netlify build image
+[build.environment]
+  NODE_VERSION = "20"
+
+# Ensure SPA routes fallback to index.html (also provided via public/_redirects)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
