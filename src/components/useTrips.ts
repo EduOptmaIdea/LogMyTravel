@@ -166,8 +166,8 @@ export function useTrips() {
       setLoading(true);
       const supabase = getSupabase();
       if (!supabase) {
-        console.info('[useTrips] Supabase não configurado. Usando localStorage para viagens, veículos desativados.');
-        setTrips(loadFromLocalStorage("trips"));
+        setError('Supabase não configurado. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+        setTrips([]);
         setVehicles([]);
         setLoading(false);
         return;
@@ -349,16 +349,8 @@ export function useTrips() {
     trip: Omit<Trip, "id">,
   ): Promise<Trip> => {
     const supabase = getSupabase();
-      const newTrip = { ...trip, id: safeRandomUUID() };
-
-    if (!supabase) {
-      // Fallback: salvar no localStorage
-      const current = loadFromLocalStorage("trips");
-      const updated = [...current, newTrip];
-      saveToLocalStorage("trips", updated);
-      setTrips(updated);
-      return newTrip;
-    }
+    const newTrip = { ...trip, id: safeRandomUUID() };
+    if (!supabase) throw new Error('Serviço indisponível. Supabase não configurado.');
 
     try {
       // Se autenticado, tentamos salvar com user_id; caso contrário tentamos sem
@@ -428,14 +420,7 @@ export function useTrips() {
       return savedTrip;
     } catch (err: any) {
       console.error("Erro ao salvar viagem no Supabase:", err);
-      // Fallback
-      const current = loadFromLocalStorage("trips");
-      const updated = [...current, newTrip];
-      saveToLocalStorage("trips", updated);
-      setTrips(updated);
-      throw new Error(
-        "Falha ao salvar viagem. Dados salvos localmente.",
-      );
+      throw new Error("Falha ao salvar viagem na nuvem.");
     }
   };
 
@@ -446,15 +431,7 @@ export function useTrips() {
   ): Promise<Trip> => {
     const supabase = getSupabase();
 
-    if (!supabase) {
-      const current = loadFromLocalStorage("trips");
-      const updated = current.map((t) =>
-        t.id === id ? { ...t, ...updates } : t,
-      );
-      saveToLocalStorage("trips", updated);
-      setTrips(updated);
-      return updated.find((t) => t.id === id)!;
-    }
+    if (!supabase) throw new Error('Serviço indisponível. Supabase não configurado.');
 
     try {
       // Converter camelCase para snake_case
@@ -518,22 +495,13 @@ export function useTrips() {
         t.id === id ? updatedTrip : t,
       );
       setTrips(updatedTrips);
-      saveToLocalStorage("trips", updatedTrips);
       return updatedTrip;
     } catch (err: any) {
       console.error(
         "Erro ao atualizar viagem no Supabase:",
         err,
       );
-      const current = loadFromLocalStorage("trips");
-      const updated = current.map((t) =>
-        t.id === id ? { ...t, ...updates } : t,
-      );
-      saveToLocalStorage("trips", updated);
-      setTrips(updated);
-      throw new Error(
-        "Falha ao atualizar viagem. Alterações salvas localmente.",
-      );
+      throw new Error("Falha ao atualizar viagem na nuvem.");
     }
   };
 
@@ -541,13 +509,7 @@ export function useTrips() {
   const deleteTrip = async (id: string): Promise<void> => {
     const supabase = getSupabase();
 
-    if (!supabase) {
-      const current = loadFromLocalStorage("trips");
-      const updated = current.filter((t) => t.id !== id);
-      saveToLocalStorage("trips", updated);
-      setTrips(updated);
-      return;
-    }
+    if (!supabase) throw new Error('Serviço indisponível. Supabase não configurado.');
 
     try {
       const { error } = await supabase
@@ -558,16 +520,9 @@ export function useTrips() {
 
       const updatedTrips = trips.filter((t) => t.id !== id);
       setTrips(updatedTrips);
-      saveToLocalStorage("trips", updatedTrips);
     } catch (err: any) {
       console.error("Erro ao deletar viagem no Supabase:", err);
-      const current = loadFromLocalStorage("trips");
-      const updated = current.filter((t) => t.id !== id);
-      saveToLocalStorage("trips", updated);
-      setTrips(updated);
-      throw new Error(
-        "Falha ao deletar viagem. Alterações salvas localmente.",
-      );
+      throw new Error("Falha ao deletar viagem na nuvem.");
     }
   };
 
@@ -578,19 +533,7 @@ export function useTrips() {
     const supabase = getSupabase();
       const newVehicle = { ...vehicle, id: safeRandomUUID(), active: vehicle.active ?? true };
 
-    // Fallback local: permitir cadastro e atualização da lista mesmo sem Supabase/usuário
-    if (!supabase || !user?.id) {
-      const savedVehicle: Vehicle = {
-        ...newVehicle,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      const existingLocal: any[] = loadFromLocalStorage("vehicles") || [];
-      saveToLocalStorage("vehicles", [savedVehicle, ...existingLocal]);
-      const updatedVehicles = [savedVehicle, ...vehicles];
-      setVehicles(updatedVehicles);
-      return savedVehicle;
-    }
+    if (!supabase || !user?.id) throw new Error('É necessário estar autenticado e com Supabase configurado para salvar veículos.');
 
     try {
       // Converter camelCase para snake_case
@@ -641,23 +584,10 @@ export function useTrips() {
 
       const updatedVehicles = [savedVehicle, ...vehicles];
       setVehicles(updatedVehicles);
-      // Mantém também no fallback local para coerência offline
-      const existingLocal: any[] = loadFromLocalStorage("vehicles") || [];
-      saveToLocalStorage("vehicles", [savedVehicle, ...existingLocal]);
       return savedVehicle;
     } catch (err: any) {
       console.error("Erro ao salvar veículo no Supabase:", err);
-      // Fallback: salvar localmente e atualizar estado para refletir no UI
-      const savedVehicle: Vehicle = {
-        ...newVehicle,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      const existingLocal: any[] = loadFromLocalStorage("vehicles") || [];
-      saveToLocalStorage("vehicles", [savedVehicle, ...existingLocal]);
-      const updatedVehicles = [savedVehicle, ...vehicles];
-      setVehicles(updatedVehicles);
-      return savedVehicle;
+      throw new Error('Falha ao salvar veículo na nuvem.');
     }
   };
 
