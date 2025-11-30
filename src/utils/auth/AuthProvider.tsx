@@ -52,13 +52,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const whatsapp = meta.whatsapp || null;
           const birth_date = meta.birth_date || null;
 
-          const { data: existing } = await supabase.from('profiles').select('id').eq('id', uid).limit(1);
-          if (!existing || existing.length === 0) {
-            await supabase.from('profiles').insert({ id: uid, full_name, nickname, whatsapp, birth_date });
+          // Upsert (cria/atualiza) perfil sempre com os metadados mais recentes
+          await supabase.from('profiles').upsert({ id: uid, full_name, nickname, whatsapp, birth_date });
+
+          // Envia boas-vindas apenas se ainda não foi enviado
+          const { data: row } = await supabase.from('profiles').select('welcome_sent_at, id').eq('id', uid).single();
+          if (row && !row.welcome_sent_at) {
             try {
               const to = u.email as string | undefined;
               if (to) {
                 await fetch(serverPath('send-welcome'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to }) });
+                // marca como enviado
+                await supabase.from('profiles').update({ welcome_sent_at: new Date().toISOString() }).eq('id', uid);
               }
             } catch {}
           }

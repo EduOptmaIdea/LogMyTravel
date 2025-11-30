@@ -17,6 +17,7 @@ alter table public.profiles add column if not exists birth_date date;
 alter table public.profiles add column if not exists created_at timestamptz default now();
 alter table public.profiles add column if not exists updated_at timestamptz default now();
 alter table public.profiles add column if not exists deactivated_at timestamptz;
+alter table public.profiles add column if not exists welcome_sent_at timestamptz;
 
 -- Unique nickname optional
 do $$ begin
