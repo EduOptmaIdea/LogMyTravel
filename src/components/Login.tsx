@@ -14,6 +14,9 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -32,6 +35,12 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
         toast.warning("Nome do usuário é obrigatório.");
         return;
       }
+      if (!fullName.trim()) {
+        setLoading(false);
+        setError("Informe seu nome completo.");
+        toast.warning("Nome completo é obrigatório.");
+        return;
+      }
       if (password.length < 6) {
         setLoading(false);
         setError("A senha deve ter pelo menos 6 caracteres.");
@@ -44,7 +53,7 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
         toast.warning("As senhas não coincidem.");
         return;
       }
-      res = await signUp(email, password, { nickname: displayName, display_name: displayName });
+      res = await signUp(email, password, { nickname: displayName, display_name: displayName, full_name: fullName, whatsapp, birth_date: birthDate });
     }
     const { error } = res;
     setLoading(false);
@@ -66,6 +75,15 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
             : "/.netlify/functions/accounts-send-welcome",
           { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: email }) }
         );
+        try {
+          if (supabase) {
+            const { data: sess } = await supabase.auth.getSession();
+            const uid = sess?.session?.user?.id;
+            if (uid) {
+              await supabase.from('profiles').upsert({ id: uid, full_name: fullName, nickname: displayName, whatsapp, birth_date: birthDate || null });
+            }
+          }
+        } catch {}
       } catch {}
     } else {
       toast.success("Login realizado com sucesso!");
@@ -123,18 +141,53 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "signup" && (
-            <div>
-              <label className="text-xs text-gray-500 block mb-1 font-medium">Nome do usuário</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-base transition-colors focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 focus:outline-none"
-                placeholder="Como quer ser chamado"
-                autoComplete="name"
-                required
-              />
-            </div>
+            <>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1 font-medium">Nome completo</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-base transition-colors focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 focus:outline-none"
+                  placeholder="Seu nome completo"
+                  autoComplete="name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1 font-medium">Nome do usuário</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-base transition-colors focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 focus:outline-none"
+                  placeholder="Como quer ser chamado"
+                  autoComplete="nickname"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1 font-medium">WhatsApp</label>
+                  <input
+                    type="text"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 text-base transition-colors focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 focus:outline-none"
+                    placeholder="(DDD) 90000-0000"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1 font-medium">Data de nascimento</label>
+                  <input
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 text-base transition-colors focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </>
           )}
           <div>
             <label className="text-xs text-gray-500 block mb-1 font-medium">E-mail</label>
