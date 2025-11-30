@@ -29,6 +29,23 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
     if (mode === "signin") {
       res = await signIn(email, password);
     } else {
+      // Pre-check: email já cadastrado?
+      try {
+        const checkRes = await fetch(
+          import.meta.env.DEV
+            ? "/accounts/check-email-exists"
+            : "/.netlify/functions/accounts-check-email-exists",
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }
+        );
+        const json = await checkRes.json().catch(() => ({ ok: false }));
+        if (json?.ok && json.exists) {
+          setLoading(false);
+          setMode("signin");
+          setError("E-mail já cadastrado. Clique em 'Esqueci minha senha' para recuperar ou use outro e-mail.");
+          toast.warning("E-mail já cadastrado – recupere a senha ou use outro e-mail.");
+          return;
+        }
+      } catch {}
       if (!displayName.trim()) {
         setLoading(false);
         setError("Informe seu nome para o perfil.");
