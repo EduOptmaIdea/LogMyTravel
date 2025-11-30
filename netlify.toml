@@ -6,6 +6,10 @@
 [build.environment]
   NODE_VERSION = "20"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # Ensure SPA routes fallback to index.html (also provided via public/_redirects)
 [[redirects]]
   from = "/*"
