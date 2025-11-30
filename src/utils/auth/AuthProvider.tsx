@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../utils/supabase/client";
+import { serverPath } from "../server";
 import type { Session, User } from "@supabase/supabase-js";
 
 type AuthContextValue = {
@@ -37,9 +38,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Ouve mudanças de auth
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       setSession(newSession ?? null);
       setUser(newSession?.user ?? null);
+
+      if (event === 'SIGNED_IN' && newSession?.user) {
+        try {
+          const u = newSession.user as any;
+          const uid = u.id as string;
+          const meta = (u.user_metadata || {}) as Record<string, any>;
+          const full_name = meta.full_name || null;
+          const nickname = meta.nickname || meta.display_name || null;
+          const whatsapp = meta.whatsapp || null;
+          const birth_date = meta.birth_date || null;
+
+          const { data: existing } = await supabase.from('profiles').select('id').eq('id', uid).limit(1);
+          if (!existing || existing.length === 0) {
+            await supabase.from('profiles').insert({ id: uid, full_name, nickname, whatsapp, birth_date });
+            try {
+              const to = u.email as string | undefined;
+              if (to) {
+                await fetch(serverPath('send-welcome'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to }) });
+              }
+            } catch {}
+          }
+        } catch {}
+      }
     });
 
     return () => {

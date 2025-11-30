@@ -68,23 +68,6 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
     }
     if (mode === "signup") {
       toast.success("Conta criada com sucesso! Verifique seu e-mail para confirmar.");
-      try {
-        await fetch(
-          import.meta.env.DEV
-            ? "/accounts/send-welcome"
-            : "/.netlify/functions/accounts-send-welcome",
-          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: email }) }
-        );
-        try {
-          if (supabase) {
-            const { data: sess } = await supabase.auth.getSession();
-            const uid = sess?.session?.user?.id;
-            if (uid) {
-              await supabase.from('profiles').upsert({ id: uid, full_name: fullName, nickname: displayName, whatsapp, birth_date: birthDate || null });
-            }
-          }
-        } catch {}
-      } catch {}
     } else {
       toast.success("Login realizado com sucesso!");
     }
