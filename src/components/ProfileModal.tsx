@@ -18,6 +18,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     (user?.user_metadata as any)?.nickname ||
     "";
   const [nickname, setNicknameInput] = useState(current);
+  const [fullName, setFullName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -45,6 +49,23 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           setHasRecords(false);
         }
       })();
+
+      // Carrega perfil detalhado
+      (async () => {
+        try {
+          if (!supabase || !user?.id) return;
+          const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          if (data) {
+            setFullName((data.full_name || '') as string);
+            setWhatsapp((data.whatsapp || '') as string);
+            setBirthDate(data.birth_date ? String(data.birth_date) : '');
+            setLastUpdatedAt(data.updated_at ? new Date(data.updated_at).toLocaleString('pt-BR') : null);
+          } else {
+            // cria registro vazio se inexistente
+            await supabase.from('profiles').insert({ id: user.id, full_name: '', nickname: current, whatsapp: '', birth_date: null }).select();
+          }
+        } catch {}
+      })();
     }
   }, [isOpen, user]);
 
@@ -56,6 +77,16 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
     setSaving(true);
     const { error } = await setNickname(trimmed);
+    try {
+      if (supabase && user?.id) {
+        await supabase.from('profiles').update({
+          full_name: fullName || null,
+          nickname: trimmed,
+          whatsapp: whatsapp || null,
+          birth_date: birthDate || null,
+        }).eq('id', user.id);
+      }
+    } catch {}
     setSaving(false);
     if (error) {
       setError(error);
@@ -139,11 +170,17 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <p className="text-sm font-medium text-gray-900">{lastAccess ? lastAccess.toLocaleString() : "—"}</p>
             </div>
           </div>
+          {lastUpdatedAt && (
+            <div>
+              <p className="text-xs text-gray-500">Última alteração</p>
+              <p className="text-sm font-medium text-gray-900">{lastUpdatedAt}</p>
+            </div>
+          )}
         </div>
 
-        {/* Campo editável: Nome de usuário */}
+        {/* Campos editáveis */}
         <div>
-          <label className="block text-sm font-medium mb-1">Nome de usuário</label>
+          <label className="block text-sm font-medium mb-1">Apelido</label>
           <input
             type="text"
             value={nickname}
@@ -152,6 +189,56 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600"
           />
           {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          <div>
+            <label className="block text-sm font-medium mb-1">Nome completo</label>
+            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full border rounded-md px-3 py-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">WhatsApp</label>
+            <input type="text" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full border rounded-md px-3 py-2" placeholder="(DDD) 90000-0000" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Data de nascimento</label>
+            <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full border rounded-md px-3 py-2" />
+          </div>
+        </div>
+
+        {/* Recuperação e alteração de senha */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={async () => {
+              try {
+                if (!supabase || !email) return;
+                await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` } as any)
+                openModal({ title: 'Recuperação', message: 'E-mail de recuperação enviado.', cancelText: 'Fechar' })
+              } catch {
+                openModal({ title: 'Erro', message: 'Falha ao iniciar recuperação de senha.', cancelText: 'Fechar' })
+              }
+            }}
+            className="w-full px-4 py-2 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+          >
+            Recuperar senha
+          </button>
+          <button
+            onClick={async () => {
+              const newPass = prompt('Informe a nova senha') || ''
+              if (newPass.length < 6) { openModal({ title: 'Senha inválida', message: 'Mínimo 6 caracteres.', cancelText: 'Fechar' }); return }
+              try {
+                if (!supabase) return;
+                const { data, error } = await supabase.auth.updateUser({ password: newPass })
+                if (error) throw new Error(error.message)
+                try { await fetch('/.netlify/functions/accounts-send-password-changed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: email }) }) } catch {}
+                openModal({ title: 'Senha alterada', message: 'Sua senha foi atualizada.', cancelText: 'Fechar' })
+              } catch (e: any) {
+                openModal({ title: 'Erro', message: e?.message || 'Falha ao alterar senha.', cancelText: 'Fechar' })
+              }
+            }}
+            className="w-full px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
+          >
+            Modificar senha
+          </button>
         </div>
 
         {/* Ações: Excluir imediatamente (sempre disponível) e Desativar */}
@@ -184,6 +271,23 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               Desativar conta (com período de 30 dias)
             </button>
             <p className="text-xs text-gray-600">Ao desativar, seus dados ficam inacessíveis e serão excluídos automaticamente após 30 dias, com avisos por e-mail.</p>
+            <button
+              onClick={async () => {
+                try {
+                  if (!supabase) throw new Error('Supabase não configurado')
+                  const { data: sess } = await supabase.auth.getSession()
+                  const accessToken = sess?.session?.access_token
+                  if (!accessToken) throw new Error('Sessão ausente')
+                  await fetch('/.netlify/functions/accounts-export-user-data', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` } })
+                  openModal({ title: 'Backup enviado', message: 'Enviamos seus dados em JSON para seu e-mail.', cancelText: 'Fechar' })
+                } catch (e: any) {
+                  openModal({ title: 'Erro', message: e?.message || 'Falha ao enviar backup.', cancelText: 'Fechar' })
+                }
+              }}
+              className="w-full px-4 py-2 rounded-full bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
+            >
+              Enviar backup dos meus dados (JSON)
+            </button>
           </div>
         </div>
 

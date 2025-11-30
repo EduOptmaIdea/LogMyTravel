@@ -34,6 +34,7 @@ src/utils/supabase/info.tsx
 *.local
 *.tmp
 *.swp
-/# Ignorar pasta de fluxos do app
+# Ignorar pasta de fluxos do app
 /fluxos_do_app/
 /supabase_templates/
+/logmytravel/

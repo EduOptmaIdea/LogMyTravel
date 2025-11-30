@@ -194,6 +194,23 @@ export default function App() {
       }
     }
   }, [user, isRecoveryFlow]);
+
+  // Primeiro clique em qualquer área → solicitar login/criar conta
+  useEffect(() => {
+    if (user || isRecoveryFlow) return;
+    const handler = () => {
+      openModal({
+        title: "Bem-vindo",
+        message: "Entre ou crie uma conta para salvar suas viagens.",
+        confirmText: "Entrar agora",
+        cancelText: "Depois",
+        onConfirm: () => setActiveView("login"),
+      });
+      window.removeEventListener('click', handler, true);
+    };
+    window.addEventListener('click', handler, true);
+    return () => window.removeEventListener('click', handler, true);
+  }, [user, isRecoveryFlow]);
   
   // Gate de login para Menu e telas derivadas (exceto reset-password)
   useEffect(() => {

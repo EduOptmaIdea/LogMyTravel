@@ -59,6 +59,14 @@ export function Login({ onSuccess, onCancel }: { onSuccess?: () => void; onCance
     }
     if (mode === "signup") {
       toast.success("Conta criada com sucesso! Verifique seu e-mail para confirmar.");
+      try {
+        await fetch(
+          import.meta.env.DEV
+            ? "/accounts/send-welcome"
+            : "/.netlify/functions/accounts-send-welcome",
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: email }) }
+        );
+      } catch {}
     } else {
       toast.success("Login realizado com sucesso!");
     }

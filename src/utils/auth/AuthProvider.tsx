@@ -128,7 +128,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!accessToken) {
         return { error: "Sessão ausente ao confirmar exclusão" };
       }
-      const res = await fetch("/accounts/delete-account-immediately", {
+      const res = await fetch(
+        import.meta.env.DEV
+          ? "/accounts/delete-account-immediately"
+          : "/.netlify/functions/accounts-delete-account-immediately",
+        {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
