@@ -89,8 +89,7 @@ export default function App() {
     mainContentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (showSplash) return <SplashScreen onReady={() => setShowSplash(false)} />;
-
+  // Ensure hooks are invoked consistently before any conditional return
   useEffect(() => {
     if (initializing || loadingTrips) return;
     if (hasOngoingTrip && (activeView === "new-trip" || activeView === "ongoing-trip")) {
@@ -99,6 +98,8 @@ export default function App() {
       setActiveView("new-trip");
     }
   }, [hasOngoingTrip, initializing, loadingTrips, activeView]);
+
+  if (showSplash) return <SplashScreen onReady={() => setShowSplash(false)} />;
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
