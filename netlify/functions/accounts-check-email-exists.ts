@@ -11,13 +11,13 @@ export const handler = async (event: any) => {
     if (!supabaseUrl || !serviceKey) return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'Supabase service not configured' }) }
 
     const supabase = createClient(supabaseUrl, serviceKey)
-    // Check in auth.users with service role
-    const { data, error } = await supabase.from('auth.users' as any).select('id').eq('email', email).limit(1)
+    // Check via Admin API
+    const { data, error } = await supabase.auth.admin.listUsers({ email }) as any
     if (error) return { statusCode: 500, body: JSON.stringify({ ok: false, error: error.message }) }
-    const exists = Array.isArray(data) && data.length > 0
+    const users = (data?.users || data?.data || []) as any[]
+    const exists = Array.isArray(users) && users.some(u => (u?.email || '').toLowerCase() === email)
     return { statusCode: 200, body: JSON.stringify({ ok: true, exists }) }
   } catch (e: any) {
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: e?.message || 'Failed' }) }
   }
 }
-

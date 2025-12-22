@@ -112,6 +112,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setSession(null);
       setUser(null);
+      try { if (typeof window !== 'undefined') { window.location.hash = ''; } } catch {}
+      try { if (typeof window !== 'undefined') { window.location.assign('/'); } } catch {}
     }
   };
 

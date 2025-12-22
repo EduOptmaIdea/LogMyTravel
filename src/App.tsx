@@ -58,9 +58,6 @@ export default function App() {
       const href = typeof window !== "undefined" ? window.location.href : "";
       const url = href ? new URL(href) : null;
       const typeQuery = url?.searchParams.get("type")?.toLowerCase();
-      const hasAccessTokenQuery = url?.searchParams.has("access_token");
-      const hasRefreshTokenQuery = url?.searchParams.has("refresh_token");
-      const hasTokensQuery = !!(hasAccessTokenQuery || hasRefreshTokenQuery);
       const rawHash = typeof window !== "undefined" ? window.location.hash : "";
       const trimmedHash = rawHash.replace("#", "").trim();
       // Interpretar o hash também como parâmetros (ex.: #type=recovery&access_token=...)
@@ -71,12 +68,8 @@ export default function App() {
       const hashIsReset = trimmedHash === "reset-password";
       const hasRecoveryType = typeQuery === "recovery" || typeHash === "recovery";
 
-      // Alguns provedores colocam tokens no hash antes do evento do Supabase
-      const hasAccessTokenHash = hashParams.has("access_token") || trimmedHash.includes("access_token=");
-      const hasRefreshTokenHash = hashParams.has("refresh_token") || trimmedHash.includes("refresh_token=");
-      const hasTokensHash = hasAccessTokenHash || hasRefreshTokenHash;
-
-      return hashIsReset || hasRecoveryType || hasTokensHash || hasTokensQuery;
+      // Não tratar presença de tokens como recuperação; apenas tipo explícito
+      return hashIsReset || hasRecoveryType;
     } catch {
       return false;
     }
@@ -137,8 +130,7 @@ export default function App() {
       const hash = window.location.hash.replace('#', '').trim();
       const hashParams = new URLSearchParams(hash);
       const typeHash = hashParams.get('type');
-      const hasToken = hashParams.has('access_token') || hashParams.has('refresh_token') || hash.includes('access_token=') || hash.includes('refresh_token=');
-      if (hash === 'reset-password' || (typeHash && typeHash.toLowerCase() === 'recovery') || hasToken) {
+      if (hash === 'reset-password' || (typeHash && typeHash.toLowerCase() === 'recovery')) {
         setIsRecoveryFlow(true);
         setActiveView('reset-password');
         setShowSplash(false);
@@ -154,8 +146,7 @@ export default function App() {
     try {
       const url = new URL(window.location.href);
       const type = url.searchParams.get('type');
-      const hasToken = url.searchParams.has('access_token') || url.searchParams.has('refresh_token');
-      if (type === 'recovery' || hasToken) {
+      if (type === 'recovery') {
         setIsRecoveryFlow(true);
         setActiveView('reset-password');
         setShowSplash(false);
