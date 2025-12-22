@@ -43,6 +43,8 @@ export default function App() {
     unlinkVehicleFromTrip,
     unlinkAllVehiclesFromTrip,
     ensureVehicleSynced,
+    syncing,
+    syncBackground,
   } = useTripsHook();
 
   const ongoingTrips = trips.filter((trip) => trip.status === "ongoing");
@@ -121,6 +123,11 @@ export default function App() {
               Você está offline. Alterações serão sincronizadas quando a conexão retornar.
             </div>
           )}
+          {syncBackground && online && (
+            <div className="mb-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 px-3 py-2 text-sm">
+              Sincronização em segundo plano. Usando dados em cache até estabilizar a conexão.
+            </div>
+          )}
 
           {activeView === "login" && <Login onSuccess={() => {}} onCancel={() => {}} />}
           {activeView === "new-trip" && (
@@ -176,6 +183,13 @@ export default function App() {
       )}
       <Toaster position="top-center" />
       {warningsModal}
+      {syncing && online && (
+        <div className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow px-4 py-3 text-center">
+            <div className="text-sm font-semibold">Atualizando banco de dados...</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

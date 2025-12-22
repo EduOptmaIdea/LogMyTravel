@@ -42,6 +42,8 @@ export function useTrips() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const { online } = useOnlineStatus();
+  const [syncing, setSyncing] = useState(false);
+  const [syncBackground, setSyncBackground] = useState(false);
 
   const TRIPS_CACHE = "trips_cache";
   const VEHICLES_CACHE = "vehicles_cache";
@@ -188,14 +190,30 @@ export function useTrips() {
   }, [user, trips, vehicles]);
 
   useEffect(() => {
-    if (online) flushQueue().then(fetchData).catch(() => {});
-    else {
-      // Em modo offline, manter caches e marcar que há logout pendente para não perder dados locais
-      try {
-        if (localStorage.getItem('logout_pending') === '1') {
-          // quando ficar online novamente, o hook de logout limpará tokens; aqui apenas mantemos dados locais
+    const startSync = async (timeoutMs = 8000) => {
+      setSyncBackground(false);
+      setSyncing(true);
+      let finished = false;
+      const flush = (async () => {
+        try {
+          await flushQueue();
+          await fetchData();
+        } finally {
+          finished = true;
+          setSyncing(false);
+          setSyncBackground(false);
         }
-      } catch {}
+      })();
+      await Promise.race([flush, new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
+      if (!finished) {
+        setSyncing(false);
+        setSyncBackground(true);
+        flush.catch(() => { setSyncBackground(false); });
+      }
+    };
+    if (online) startSync().catch(() => {});
+    else {
+      try { if (localStorage.getItem('logout_pending') === '1') {} } catch {}
     }
   }, [online]);
 
@@ -239,7 +257,7 @@ export function useTrips() {
   };
 
   return {
-    trips, vehicles, loading,
+    trips, vehicles, loading, syncing, syncBackground,
     saveTrip, updateTrip, deleteTrip,
     saveVehicle: async (v: Omit<Vehicle, "id">): Promise<Vehicle> => {
       if (supabase && online) {
