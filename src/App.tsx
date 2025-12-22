@@ -47,8 +47,8 @@ export default function App() {
     unlinkAllVehiclesFromTrip,
   } = useTripsHook();
 
-  // Ocultar dados quando não autenticado
-  const trips = user ? cloudTrips : [];
+  // Sempre renderizar trips do hook (usa localStorage quando não autenticado)
+  const trips = cloudTrips;
   const ongoingTrips = trips.filter((trip) => trip.status === "ongoing");
   const hasOngoingTrip = ongoingTrips.length > 0;
 

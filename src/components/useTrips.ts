@@ -167,7 +167,7 @@ export function useTrips() {
       const supabase = getSupabase();
       if (!supabase) {
         setError('Supabase não configurado. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
-        setTrips([]);
+        setTrips(loadFromLocalStorage("trips"));
         setVehicles([]);
         setLoading(false);
         return;
@@ -178,6 +178,13 @@ export function useTrips() {
         !!err && (err.code === "42703" || String(err.message || "").includes("user_id"));
 
       try {
+        // Usuário não autenticado → priorizar dados locais
+        if (!user?.id) {
+          setTrips(loadFromLocalStorage("trips"));
+          setVehicles([]);
+          setLoading(false);
+          return;
+        }
         // Carregar viagens
         const baseTripsReq = supabase
           .from("trips")
