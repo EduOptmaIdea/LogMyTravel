@@ -32,7 +32,7 @@ export function VehiclesView({
   const [signedMap, setSignedMap] = useState<Record<string, string>>({});
 
   // Efeito para carregar as fotos assinadas do Supabase
-  useEffect(() => {
+  React.useEffect(() => {
     (async () => {
       try {
         if (!supabase) return;
