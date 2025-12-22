@@ -35,10 +35,41 @@ export function useTrips() {
     if (!user || !supabase) return;
     setLoading(true);
     try {
-      const { data: t } = await supabase.from("trips").select("*").order("created_at", { ascending: false });
-      const { data: v } = await supabase.from("vehicles").select("*");
-      if (t) setTrips(t as Trip[]);
-      if (v) setVehicles(v as Vehicle[]);
+      const { data: t } = await supabase
+        .from("trips")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .eq("user_id", user.id);
+      const { data: v } = await supabase
+        .from("vehicles")
+        .select("*")
+        .eq("user_id", user.id);
+      if (t) {
+        const mapped: Trip[] = (t as any[]).map((row) => ({
+          id: row.id,
+          name: row.name,
+          departureDate: row.departure_date,
+          departureTime: row.departure_time,
+          departureLocation: row.departure_location,
+          startKm: row.start_km,
+          endKm: row.end_km,
+          status: row.status,
+          hasVehicle: row.has_vehicle,
+          vehicleIds: row.vehicle_ids,
+        }));
+        setTrips(mapped);
+      }
+      if (v) {
+        const mappedV: Vehicle[] = (v as any[]).map((row) => ({
+          id: row.id,
+          nickname: row.nickname,
+          licensePlate: row.license_plate,
+          photoUrl: row.photo_url ?? null,
+          photoPath: row.photo_path ?? null,
+          active: typeof row.active === "boolean" ? row.active : true,
+        }));
+        setVehicles(mappedV);
+      }
     } finally {
       setLoading(false);
     }
@@ -81,13 +112,26 @@ export function useTrips() {
   return {
     trips, vehicles, loading,
     saveTrip, updateTrip, deleteTrip,
-    saveVehicle: async (v: any) => {
-      if (!supabase) return;
-      return await supabase.from("vehicles").insert([{...v, user_id: user?.id}]).select().single();
+    saveVehicle: async (v: Omit<Vehicle, "id">): Promise<Vehicle> => {
+      if (!supabase) throw new Error("Supabase não disponível");
+      const { data, error } = await supabase
+        .from("vehicles")
+        .insert([{...v, user_id: user?.id}])
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Vehicle;
     },
-    updateVehicle: async (id: string, v: any) => {
-      if (!supabase) return;
-      return await supabase.from("vehicles").update(v).eq("id", id).select().single();
+    updateVehicle: async (id: string, v: Partial<Vehicle>): Promise<Vehicle> => {
+      if (!supabase) throw new Error("Supabase não disponível");
+      const { data, error } = await supabase
+        .from("vehicles")
+        .update(v)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Vehicle;
     },
     deleteVehicle: async (id: string) => {
       if (supabase) await supabase.from("vehicles").delete().eq("id", id);

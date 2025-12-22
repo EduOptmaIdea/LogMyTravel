@@ -5,6 +5,7 @@ import VehiclesOnTrip from "./VehiclesOnTrip";
 import type { Vehicle } from "./useTrips";
 import type { Trip } from "./useTrips";
 import { useWarningsModal } from "./hooks/useWarningsModal";
+import { supabase } from "../utils/supabase/client";
 
 type VehiclesViewProps = {
   vehicles: Vehicle[];
@@ -37,6 +38,24 @@ export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, up
   });
   const [viewing, setViewing] = useState<Vehicle | null>(null);
   const { openModal, element: warningsModal } = useWarningsModal();
+  const [signedMap, setSignedMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!supabase) return;
+        const entries = vehicles.filter(v => !v.photoUrl && v.photoPath).slice(0, 20);
+        const next: Record<string, string> = {};
+        for (const v of entries) {
+          try {
+            const { data } = await supabase.storage.from('trip-photos').createSignedUrl(String(v.photoPath), 3600);
+            if (data?.signedUrl) next[v.id] = data.signedUrl;
+          } catch {}
+        }
+        setSignedMap(next);
+      } catch {}
+    })();
+  }, [vehicles]);
 
   const isVehicleUsed = (vehicleId: string) => {
     return trips.some((t) => Array.isArray(t.vehicleIds) && t.vehicleIds.includes(vehicleId));
@@ -265,13 +284,16 @@ export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, up
             >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-                  {v.photoUrl ? (
-                    <img src={v.photoUrl} alt={v.nickname || v.model || ''} className="h-full w-full object-cover" />
-                  ) : v.photoPath ? (
-                    <span className="text-[10px] text-gray-400">foto não pública</span>
-                  ) : (
-                    <span className="text-xs text-gray-400">sem foto</span>
-                  )}
+                  {(() => {
+                    const url = v.photoUrl || signedMap[v.id] || null;
+                    if (url) {
+                      return <img src={url} alt={v.nickname || v.model || ''} className="h-full w-full object-cover" />;
+                    }
+                    if (v.photoPath) {
+                      return <span className="text-[10px] text-gray-400">foto não pública</span>;
+                    }
+                    return <span className="text-xs text-gray-400">sem foto</span>;
+                  })()}
                 </div>
                 <div>
                   <div className="font-semibold text-[#192A56]">{v.nickname || v.make || v.licensePlate}</div>

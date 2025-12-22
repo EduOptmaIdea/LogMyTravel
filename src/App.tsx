@@ -91,6 +91,15 @@ export default function App() {
 
   if (showSplash) return <SplashScreen onReady={() => setShowSplash(false)} />;
 
+  useEffect(() => {
+    if (initializing || loadingTrips) return;
+    if (hasOngoingTrip && (activeView === "new-trip" || activeView === "ongoing-trip")) {
+      setActiveView("ongoing-trip");
+    } else if (!hasOngoingTrip && activeView === "ongoing-trip") {
+      setActiveView("new-trip");
+    }
+  }, [hasOngoingTrip, initializing, loadingTrips, activeView]);
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <TripHeader onOpenLogin={() => setActiveView("login")} /> 
@@ -143,7 +152,13 @@ export default function App() {
       </main>
 
       <BottomNav activeView={activeView} onViewChange={setActiveView} hasOngoingTrip={hasOngoingTrip} />
-      {isEditModalOpen && tripToEdit && <TripEditModal trip={tripToEdit} onSave={(data) => updateTrip(tripToEdit.id, data)} onClose={() => setIsEditModalOpen(false)} />}
+      {isEditModalOpen && tripToEdit && (
+        <TripEditModal
+          trip={tripToEdit}
+          onSave={async (data) => { await updateTrip(tripToEdit.id, data); }}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
       <Toaster position="top-center" />
       {warningsModal}
     </div>
