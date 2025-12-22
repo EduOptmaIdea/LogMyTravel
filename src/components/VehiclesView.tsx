@@ -158,6 +158,27 @@ export function VehiclesView({
                 <div>
                   <div className="font-semibold text-[#192A56]">{v.nickname || v.make || v.licensePlate}</div>
                   <div className="text-xs text-gray-600">{v.model || "—"}</div>
+                  {v.syncStatus && v.syncStatus !== 'synced' && (
+                    <div className="mt-1">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                        v.syncStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {v.syncStatus === 'pending' ? 'Pendente' : 'Erro'}
+                      </span>
+                      {ensureVehicleSynced && (
+                        <button
+                          type="button"
+                          className="ml-2 text-[10px] underline text-teal-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            ensureVehicleSynced?.(v.id);
+                          }}
+                        >
+                          Re-sincronizar
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <ChevronRight size={18} className="text-gray-400" />

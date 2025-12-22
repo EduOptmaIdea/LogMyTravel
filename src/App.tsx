@@ -21,11 +21,13 @@ import { toast } from "sonner";
 import { useTrips as useTripsHook } from "./components/useTrips";
 import type { Trip } from "./components/useTrips";
 import { useWarningsModal } from "./components/hooks/useWarningsModal";
+import { useOnlineStatus } from "./utils/offline/useOnlineStatus";
 
 export default function App() {
   const { user, initializing } = useAuth();
   const { openModal, element: warningsModal } = useWarningsModal();
   const [selectedOngoingTripId, setSelectedOngoingTripId] = useState<string | null>(null);
+  const { online } = useOnlineStatus();
 
   const {
     trips,
@@ -114,6 +116,11 @@ export default function App() {
 
       <main ref={mainContentRef} className="flex-1 overflow-y-auto scroll-smooth">
         <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto px-4 pt-[72px] pb-24"> 
+          {!online && (
+            <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 text-sm">
+              Você está offline. Alterações serão sincronizadas quando a conexão retornar.
+            </div>
+          )}
 
           {activeView === "login" && <Login onSuccess={() => {}} onCancel={() => {}} />}
           {activeView === "new-trip" && (
