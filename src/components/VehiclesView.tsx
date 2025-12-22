@@ -139,7 +139,7 @@ export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, up
             openModal({ title: "Excluído", message: "Veículo excluído com sucesso", cancelText: "Fechar" });
             setViewing(null);
           }}
-          isVehicleUsed={isVehicleUsed(viewing.id)}
+          isVehicleUsed={viewing ? isVehicleUsed(viewing.id) : false}
         />
       </div>
     );
