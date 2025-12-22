@@ -30,6 +30,7 @@ export function VehiclesView({
   const [viewing, setViewing] = useState<Vehicle | null>(null);
   const { openModal, element: warningsModal } = useWarningsModal();
   const [signedMap, setSignedMap] = useState<Record<string, string>>({});
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Efeito para carregar as fotos assinadas do Supabase
   React.useEffect(() => {
@@ -150,7 +151,7 @@ export function VehiclesView({
                 <div className="h-10 w-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
                   {(() => {
                     const url = v.photoUrl || signedMap[v.id] || null;
-                    if (url) return <img src={url} alt={v.nickname} className="h-full w-full object-cover" />;
+                    if (url) return <img src={url} alt={v.nickname} className="h-full w-full object-cover cursor-zoom-in" onClick={(e) => { e.stopPropagation(); setLightboxUrl(url); }} />;
                     return <span className="text-xs text-gray-400">sem foto</span>;
                   })()}
                 </div>
@@ -189,6 +190,11 @@ export function VehiclesView({
         >
           <PlusCircle size={28} />
         </button>
+      )}
+      {!!lightboxUrl && (
+        <div className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center" onClick={() => setLightboxUrl(null)}>
+          <img src={lightboxUrl} className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg" />
+        </div>
       )}
     </div>
   );

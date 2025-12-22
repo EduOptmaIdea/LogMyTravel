@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { X, Pencil, Trash2, Tag } from "lucide-react";
 import { supabase } from "../utils/supabase/client";
 import { useAuth } from "../utils/auth/AuthProvider";
@@ -38,6 +38,8 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [clearPhoto, setClearPhoto] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const title = useMemo(() => {
     return (vehicle.nickname || vehicle.make || vehicle.licensePlate || "Veículo");
@@ -181,7 +183,7 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
       </div>
 
       {/* Conteúdo da página */}
-      <div className="max-w-md mx-auto px-4 py-3 space-y-4">
+      <div className="max-w-md mx-auto px-4 py-3 pb-24 space-y-4">
         <div className="space-y-2">
             <div className="text-sm text-gray-700">
               <span className="inline-flex items-center gap-1 text-gray-500 text-xs"><Tag size={12} /> Placa</span>
@@ -227,7 +229,7 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
             </div>
           </div>
         {isEditing && (
-          <div className="space-y-3">
+            <div className="space-y-3">
             <div>
               <label className="text-xs text-gray-500 block mb-1">Nome (apelido)</label>
               <input
@@ -304,7 +306,10 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
             <div className="space-y-2">
               <label className="text-xs text-gray-500 block">Foto do veículo</label>
               <div className="flex items-center gap-3">
-                <div className="h-16 w-16 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                <div className="h-20 w-20 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center cursor-zoom-in" onClick={() => {
+                  const url = (imagePreview || vehicle.photoUrl) as string | null;
+                  if (url) setLightboxUrl(url);
+                }}>
                   {(imagePreview || vehicle.photoUrl) ? (
                     <img src={(imagePreview || vehicle.photoUrl) as string} alt="Pré-visualização" className="h-full w-full object-cover" />
                   ) : (
@@ -312,8 +317,11 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
                   )}
                 </div>
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
+                  className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
                     setImageFile(file);
@@ -327,13 +335,23 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
                     }
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={() => { setClearPhoto(true); setImageFile(null); setImagePreview(null); }}
-                  className="px-3 py-2 rounded-full border bg-white text-gray-700 hover:bg-gray-50"
-                >
-                  Remover foto
-                </button>
+                {(imagePreview || vehicle.photoUrl) ? (
+                  <button
+                    type="button"
+                    onClick={() => { setClearPhoto(true); setImageFile(null); setImagePreview(null); }}
+                    className="px-3 py-2 rounded-full border bg-white text-gray-700 hover:bg-gray-50"
+                  >
+                    Remover foto
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-2 rounded-full bg-teal-600 text-white hover:bg-teal-700"
+                  >
+                    Adicionar foto
+                  </button>
+                )}
               </div>
               {clearPhoto && <p className="text-xs text-red-600">A foto atual será apagada do storage.</p>}
             </div>
@@ -352,7 +370,11 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
           </div>
         )}
       </div>
-
+      {!!lightboxUrl && (
+        <div className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center" onClick={() => setLightboxUrl(null)}>
+          <img src={lightboxUrl} className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg" />
+        </div>
+      )}
       {/* Barra de ações inferior da página */}
       <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex gap-2">
