@@ -10,11 +10,17 @@ export interface Trip {
   departureDate: string;
   departureTime: string;
   departureLocation: string;
+  departureCoords?: { latitude: number; longitude: number } | null;
   startKm?: number | null;
   endKm?: number | null;
   status: "ongoing" | "completed";
   hasVehicle?: boolean;
   vehicleIds?: string[];
+  arrivalLocation?: string;
+  arrivalCoords?: { latitude: number; longitude: number } | null;
+  arrivalDate?: string;
+  arrivalTime?: string;
+  details?: string;
   [key: string]: any; 
 }
 
@@ -116,11 +122,17 @@ export function useTrips() {
           departureDate: row.departure_date,
           departureTime: row.departure_time,
           departureLocation: row.departure_location,
+          departureCoords: row.departure_coords ?? null,
           startKm: row.start_km,
           endKm: row.end_km,
           status: row.status,
           hasVehicle: row.has_vehicle,
           vehicleIds: row.vehicle_ids,
+          arrivalLocation: row.arrival_location ?? undefined,
+          arrivalCoords: row.arrival_coords ?? null,
+          arrivalDate: row.arrival_date ?? undefined,
+          arrivalTime: row.arrival_time ?? undefined,
+          details: row.details ?? undefined,
         }));
         setTrips(mapped);
       }
@@ -242,8 +254,32 @@ export function useTrips() {
   };
 
   const updateTrip = async (id: string, updates: Partial<Trip>): Promise<Trip> => {
+    // Converte camelCase para snake_case conforme schema do banco
+    const toSnake = (obj: Record<string, any>) => {
+      const map: Record<string, string> = {
+        departureDate: "departure_date",
+        departureTime: "departure_time",
+        departureLocation: "departure_location",
+        departureCoords: "departure_coords",
+        startKm: "start_km",
+        endKm: "end_km",
+        hasVehicle: "has_vehicle",
+        vehicleIds: "vehicle_ids",
+        arrivalLocation: "arrival_location",
+        arrivalCoords: "arrival_coords",
+        arrivalDate: "arrival_date",
+        arrivalTime: "arrival_time",
+      };
+      const out: Record<string, any> = {};
+      Object.keys(obj).forEach((k) => {
+        const nk = map[k] || k;
+        out[nk] = obj[k];
+      });
+      return out;
+    };
+    const payload = toSnake(updates as Record<string, any>);
     if (supabase && online) {
-      const { data, error } = await supabase.from("trips").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("trips").update(payload).eq("id", id).select().single();
       if (error) throw error;
       return data as Trip;
     }

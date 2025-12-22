@@ -60,9 +60,29 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
   }, [sameLocation, trip.departureLocation, trip.departureCoords]);
 
   const captureLocation = () => {
-    const simulated: LocationData = { latitude: -16.6542947, longitude: -49.2942842 };
-    setArrivalCoords(simulated);
-    toast.success("Localização salva!");
+    try {
+      if (!navigator?.geolocation) {
+        toast.error("Geolocalização não disponível. Habilite GPS.");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setArrivalCoords({ latitude, longitude });
+          toast.success("Localização salva!");
+        },
+        (_) => {
+          const fallback: LocationData = { latitude: -16.674, longitude: -49.262 };
+          setArrivalCoords(fallback);
+          toast.warning("Usando localização estimada. Verifique o GPS.");
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    } catch {
+      const fallback: LocationData = { latitude: -16.674, longitude: -49.262 };
+      setArrivalCoords(fallback);
+      toast.warning("Usando localização estimada.");
+    }
   };
 
   const openInMaps = (coords: LocationData) => {
