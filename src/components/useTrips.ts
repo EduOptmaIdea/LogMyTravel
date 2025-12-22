@@ -603,32 +603,27 @@ export function useTrips() {
         photo_path: newVehicle.photoPath ?? null,
         active: newVehicle.active ?? true,
       };
-      let vins = await supabase
+      const vins = await supabase
         .from("vehicles")
-        .insert([vehicleData])
-        .select()
-        .single();
-
+        .insert([vehicleData]);
       if (vins.error) throw vins.error;
-
-      // Converter resposta de volta para camelCase
       const savedVehicle: Vehicle = {
-        id: vins.data.id,
-        nickname: vins.data.nickname,
-        category: vins.data.category,
-        make: vins.data.make,
-        model: vins.data.model,
-        color: vins.data.color,
-        year: vins.data.year,
-        licensePlate: vins.data.license_plate,
-        vehicleType: vins.data.vehicle_type,
-        kmInitial: vins.data.km_initial,
-        fuels: vins.data.fuels,
-        photoUrl: vins.data.photo_url ?? null,
-        photoPath: vins.data.photo_path ?? null,
-        active: (typeof vins.data.active === 'boolean') ? vins.data.active : true,
-        created_at: vins.data.created_at,
-        updated_at: vins.data.updated_at,
+        id: newVehicle.id,
+        nickname: newVehicle.nickname,
+        category: newVehicle.category,
+        make: newVehicle.make,
+        model: newVehicle.model,
+        color: newVehicle.color,
+        year: newVehicle.year,
+        licensePlate: newVehicle.licensePlate,
+        vehicleType: newVehicle.vehicleType,
+        kmInitial: newVehicle.kmInitial,
+        fuels: newVehicle.fuels,
+        photoUrl: newVehicle.photoUrl ?? null,
+        photoPath: newVehicle.photoPath ?? null,
+        active: (typeof newVehicle.active === 'boolean') ? newVehicle.active : true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       const updatedVehicles = [savedVehicle, ...vehicles];
