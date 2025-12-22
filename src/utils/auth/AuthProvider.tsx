@@ -112,8 +112,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setSession(null);
       setUser(null);
+      try {
+        if (typeof window !== 'undefined') {
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith('sb-') || k === 'trips' || k === 'vehicles' || k === 'trip_vehicle_segments')
+            .forEach((k) => {
+              try { localStorage.removeItem(k); } catch {}
+            });
+        }
+      } catch {}
       try { if (typeof window !== 'undefined') { window.location.hash = ''; } } catch {}
-      try { if (typeof window !== 'undefined') { window.location.assign('/'); } } catch {}
+      try { if (typeof window !== 'undefined') { window.location.replace('/'); } } catch {}
     }
   };
 
