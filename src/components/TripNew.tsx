@@ -128,19 +128,24 @@ export function TripNew({ onSaveTrip, onRequireLogin }: TripNewProps) {
     }
   }, [user]);
 
-  const captureLocation = () => {
-    setLoadingDeparture(true);
-    setDepartureMessage("");
-    const simulatedLocation: LocationData = {
-      latitude: -16.6542947,
-      longitude: -49.2942842,
-    };
-    setTimeout(() => {
-      setDepartureLocation(simulatedLocation);
+  const captureLocation = async () => {
+    try {
+      setLoadingDeparture(true);
+      setDepartureMessage("");
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!('geolocation' in navigator)) reject(new Error('Geolocalização indisponível'));
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+      });
+      const loc: LocationData = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      setDepartureLocation(loc);
+      if (!departureText.trim()) setDepartureText("Minha localização atual");
       setDepartureMessage("Localização salva com sucesso");
+    } catch (e: any) {
+      setDepartureMessage(e?.message ? String(e.message) : "Falha ao obter localização");
+    } finally {
       setLoadingDeparture(false);
       setTimeout(() => setDepartureMessage(""), 3000);
-    }, 1000);
+    }
   };
 
   const openInMaps = (location: LocationData) => {
@@ -179,12 +184,23 @@ export function TripNew({ onSaveTrip, onRequireLogin }: TripNewProps) {
 
     let finalDepartureLocation = departureLocation;
     if (!finalDepartureLocation) {
-      setLoadingDeparture(true);
-      finalDepartureLocation = { latitude: -16.6542947, longitude: -49.2942842 };
-      setDepartureLocation(finalDepartureLocation);
-      setDepartureMessage("Localização salva automaticamente");
-      setLoadingDeparture(false);
-      setTimeout(() => setDepartureMessage(""), 3000);
+      try {
+        setLoadingDeparture(true);
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          if (!('geolocation' in navigator)) reject(new Error('Geolocalização indisponível'));
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        });
+        finalDepartureLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setDepartureLocation(finalDepartureLocation);
+        if (!departureText.trim()) setDepartureText("Minha localização atual");
+        setDepartureMessage("Localização salva automaticamente");
+      } catch (e: any) {
+        setDepartureMessage(e?.message ? String(e.message) : "Falha ao obter localização");
+        return;
+      } finally {
+        setLoadingDeparture(false);
+        setTimeout(() => setDepartureMessage(""), 3000);
+      }
     }
 
     const [y, m, d] = departureDate.split("-").map(Number);
