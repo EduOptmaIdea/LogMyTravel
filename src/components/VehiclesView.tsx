@@ -353,13 +353,12 @@ export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, up
         Histórico por veículo: a ser construído. Nesta tela aparecerão trechos e viagens associados.
       </div>
 
-      {viewing && (
+      {viewing ? (
         <VehicleDetailsModal
           vehicle={viewing}
           onClose={() => setViewing(null)}
           onUpdate={async (id, updates) => {
             const updated = await updateVehicle(id, updates);
-            // Feedback visual
             openModal({ title: "Sucesso", message: "Veículo atualizado", cancelText: "Fechar" });
             return updated;
           }}
@@ -369,7 +368,7 @@ export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, up
           }}
           isVehicleUsed={isVehicleUsed(viewing.id)}
         />
-      )}
+      ) : null}
 
       {/* Botão flutuante para adicionar veículo (oculto durante adicionar/visualizar) */}
       {!adding && !viewing && (
