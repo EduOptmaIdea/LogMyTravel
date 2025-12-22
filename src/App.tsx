@@ -174,12 +174,13 @@ export default function App() {
   
 
   useEffect(() => {
+    if (initializing || loadingTrips) return;
     if (hasOngoingTrip && (activeView === "new-trip" || activeView === "ongoing-trip")) {
       setActiveView("ongoing-trip");
     } else if (!hasOngoingTrip && activeView === "ongoing-trip") {
       setActiveView("new-trip");
     }
-  }, [hasOngoingTrip]);
+  }, [hasOngoingTrip, initializing, loadingTrips, activeView]);
 
   useEffect(() => {
     if (user && hasOngoingTrip && !isRecoveryFlow && activeView !== 'reset-password') {
@@ -188,14 +189,14 @@ export default function App() {
   }, [user, hasOngoingTrip, isRecoveryFlow]);
 
   useEffect(() => {
+    if (initializing) return;
     if (!user) {
-      // Não sobrescrever fluxo de recuperação
       setSelectedOngoingTripId(null);
       if (!isRecoveryFlow) {
         setActiveView("new-trip");
       }
     }
-  }, [user, isRecoveryFlow]);
+  }, [user, isRecoveryFlow, initializing]);
 
   // Primeiro clique em qualquer área → solicitar login/criar conta
   useEffect(() => {
@@ -216,6 +217,7 @@ export default function App() {
   
   // Gate de login para Menu e telas derivadas (exceto reset-password)
   useEffect(() => {
+    if (initializing) return;
     const protectedViews = new Set(["menu", "faqs", "about", "my-trips", "dashboard", "vehicles"]);
     if (protectedViews.has(activeView) && !user) {
       openModal({
@@ -225,10 +227,9 @@ export default function App() {
         cancelText: "Cancelar",
         onConfirm: () => setActiveView("login"),
       });
-      // Evitar render momentâneo da tela protegida
       setActiveView("login");
     }
-  }, [activeView, user]);
+  }, [activeView, user, initializing]);
 
   const handleEditEndKm = async (
     tripId: string,
