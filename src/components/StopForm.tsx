@@ -26,7 +26,7 @@ interface StopFormProps {
 type ExpenseCategory = 'fuel' | 'food' | 'lodging' | 'workshop' | 'other';
 interface ExpenseItem { category: ExpenseCategory; amount: number; note?: string }
 
-export function StopForm({ tripId, currentKm, onSave, onCancel, initialData, initialIsDriving = false, previousKm, vehicleInUseName, previousStopDepartureDate, previousStopDepartureTime }: StopFormProps) {
+export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, initialData, initialIsDriving = false, previousKm, vehicleInUseName, previousStopDepartureDate, previousStopDepartureTime }: StopFormProps) {
   const now = new Date();
   
   // Estado do formulário
