@@ -276,6 +276,16 @@ export function useTrips() {
           }),
         );
 
+        // Se nenhum dado veio da nuvem, usar cache/localStorage
+        if (!tripsWithStops || tripsWithStops.length === 0) {
+          const local = loadFromLocalStorage("trips");
+          setTrips(local || []);
+        } else {
+          setTrips(tripsWithStops);
+          // Cachear última leitura bem sucedida da nuvem
+          saveToLocalStorage("trips_cache", tripsWithStops);
+        }
+
         // Carregar veículos e converter snake_case para camelCase
         const baseVehiclesReq = supabase
           .from("vehicles")
@@ -320,13 +330,13 @@ export function useTrips() {
           updated_at: v.updated_at,
         }));
 
-        // Exibir dados independente de autenticação quando coluna user_id não existir
-        // Se autenticado e coluna existir, dados já vieram filtrados acima.
-        setTrips(tripsWithStops || []);
+        // Exibir veículos; se vazio, manter lista vazia
         setVehicles(vehicles || []);
       } catch (err: any) {
         console.error("Erro ao carregar do Supabase:", err);
-        setTrips(loadFromLocalStorage("trips"));
+        const local = loadFromLocalStorage("trips");
+        const cache = loadFromLocalStorage("trips_cache");
+        setTrips((local && local.length > 0 ? local : cache) || []);
         setVehicles([]);
         setError(
           "Falha ao carregar dados da nuvem. Usando dados locais.",
