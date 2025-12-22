@@ -53,12 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const whatsapp = meta.whatsapp || null;
           const birth_date = meta.birth_date || null;
 
-          // Upsert (cria/atualiza) perfil sempre com os metadados mais recentes
-          await sb.from('profiles').upsert({ id: uid, full_name, nickname, whatsapp, birth_date });
+          // Garantir que existe um perfil; não sobrescreve campos já editados pelo usuário
+          const { data: existing } = await sb.from('profiles').select('id,welcome_sent_at').eq('id', uid).maybeSingle();
+          if (!existing) {
+            await sb.from('profiles').insert({ id: uid, full_name, nickname, whatsapp, birth_date });
+          }
 
           // Envia boas-vindas apenas se ainda não foi enviado
-          const { data: row } = await sb.from('profiles').select('welcome_sent_at, id').eq('id', uid).single();
-          if (row && !row.welcome_sent_at) {
+          const { data: row } = await sb.from('profiles').select('welcome_sent_at, id').eq('id', uid).maybeSingle();
+          if (row && !row?.welcome_sent_at) {
             try {
               const to = u.email as string | undefined;
               if (to) {

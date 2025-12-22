@@ -173,7 +173,7 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-white shadow hover:bg-gray-100 text-gray-700 border fixed top-4 right-4"
+            className="p-2 rounded-full bg-white shadow hover:bg-gray-100 text-gray-700 border absolute right-4 top-4"
             aria-label="Fechar"
             title="Fechar"
           >
@@ -376,8 +376,8 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
         </div>
       )}
       {/* Barra de ações inferior da página */}
-      <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex gap-2">
+        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex gap-3">
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
@@ -385,6 +385,7 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
               title="Editar"
             >
               <Pencil size={16} />
+              <span>Editar</span>
             </button>
           )}
           {isEditing && (
