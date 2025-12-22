@@ -113,7 +113,9 @@ export interface TripVehicleSegment {
 // Cliente Supabase
 import { supabase, SUPABASE_CONFIGURED } from "../utils/supabase/client";
 import { safeRandomUUID } from "../utils/uuid";
-import { serverPath } from "../utils/server";
+// helpers for serverless function paths
+const vehiclesSaveFn = () =>
+  (import.meta.env.DEV ? "/vehicles-save" : "/.netlify/functions/vehicles-save");
 
 const getSupabase = () => {
   return supabase; // Já é null se não configurado
@@ -634,7 +636,7 @@ export function useTrips() {
           const res = await supabase.from("vehicles").insert([vehicleData]);
           if (res.error) {
             console.warn("Falha Supabase vehicles.insert:", res.error.message || res.error);
-            const fnRes = await fetch(serverPath("vehicles-save"), {
+            const fnRes = await fetch(vehiclesSaveFn(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ vehicle: vehicleData }),
@@ -647,7 +649,7 @@ export function useTrips() {
         } catch (err: any) {
           console.warn("Exceção Supabase vehicles.insert:", err?.message || err);
           try {
-            const fnRes = await fetch(serverPath("vehicles-save"), {
+            const fnRes = await fetch(vehiclesSaveFn(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ vehicle: vehicleData }),
