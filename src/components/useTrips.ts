@@ -551,7 +551,23 @@ export function useTrips() {
         updRes = await baseUpdateTripsReq.select().single();
       }
 
-      if (updRes.error) throw updRes.error;
+      // Se ainda falhar ou não retornar dados, usar função server (service role)
+      if (updRes.error || !updRes.data) {
+        try {
+          const fnRes = await fetch(import.meta.env.DEV ? "/trips-update" : "/.netlify/functions/trips-update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, updates: updateData }),
+          });
+          const json = await fnRes.json().catch(() => ({ ok: false }));
+          if (!json?.ok || !json?.data) {
+            throw new Error(json?.error || "Falha ao atualizar viagem (server)");
+          }
+          updRes = { data: json.data, error: null } as any;
+        } catch (e: any) {
+          throw (updRes.error || e);
+        }
+      }
 
       // Converter resposta de volta para camelCase
       const updatedTrip: Trip = {
