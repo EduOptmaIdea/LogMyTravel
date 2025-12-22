@@ -91,11 +91,11 @@ export function DashboardView({ trips }: DashboardViewProps) {
                             const sv = segs
                                 .filter((s: Segment) => s.vehicleId === vid)
                                 .sort((a: Segment, b: Segment) => {
-                                    const da = new Date(a.segmentDate).getTime();
-                                    const db = new Date(b.segmentDate).getTime();
+                                    const da = new Date(a.segmentDate || 0).getTime();
+                                    const db = new Date(b.segmentDate || 0).getTime();
                                     if (da !== db) return da - db;
-                                    const ca = a.created_at ? new Date(a.created_at).getTime() : 0;
-                                    const cb = b.created_at ? new Date(b.created_at).getTime() : 0;
+                                    const ca = new Date(a.created_at || 0).getTime();
+                                    const cb = new Date(b.created_at || 0).getTime();
                                     return ca - cb;
                                 });
                             if (sv.length > 0) {
