@@ -170,6 +170,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     onDetachVehicleFromTrip?: (tripId: string, vehicleId: string) => void; // 👈 ação de desvincular individual
     saveVehicle?: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle>;
     updateVehicle?: (id: string, updates: Partial<Vehicle>) => Promise<Vehicle>;
+    updateTrip?: (id: string, updates: Partial<Trip>) => Promise<Trip>;
   }
 
   export function OngoingTripView({
@@ -186,6 +187,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     onDetachVehicleFromTrip,
     saveVehicle: saveVehicleProp,
     updateVehicle: updateVehicleProp,
+    updateTrip: updateTripProp,
   }: OngoingTripViewProps) {
   // Preferir veículos vindos do App para evitar instância duplicada do hook
   const {
@@ -199,7 +201,6 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     updateTripVehicleCurrentKm,
     // 👇 usar para criar segmento ao vincular veículo
     saveTripVehicleSegment,
-    updateTrip,
     deleteVehicle,
     saveVehicle: hookSaveVehicle,
     updateVehicle: hookUpdateVehicle,
@@ -1129,7 +1130,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
 
                    setIsDriving(val);
                    // Persistir estado na viagem (Supabase ou localStorage via hook)
-                   updateTrip(selectedTrip.id, { isDriving: val }).catch((e) => {
+                   (updateTripProp ? updateTripProp : async (id: string, updates: Partial<Trip>) => Promise.resolve(updates as any))(selectedTrip.id, { isDriving: val }).catch((e) => {
                      console.warn("Falha ao atualizar isDriving", e);
                    });
                    if (!val) {

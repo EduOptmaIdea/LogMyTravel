@@ -534,6 +534,7 @@ export default function App() {
               initialSelectedTripId={selectedOngoingTripId || undefined}
               saveVehicle={saveVehicle}
               updateVehicle={updateVehicle}
+              updateTrip={updateTrip}
               onEdit={handleEditTrip}
               onDelete={handleDeleteOngoingTrip}
               onComplete={() => {}}
