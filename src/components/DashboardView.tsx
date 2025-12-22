@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 // Importa Trip (interface) e TripComparisonWrapper (componente)
 import { Trip, TripComparisonWrapper } from "./TripComparisonDashboard"; 
 import { useTrips } from "./useTrips";
+import type { Segment } from "./useTrips";
 
 
 // --- Componente Auxiliar: Modal (Estrutura do Pop-up) ---
@@ -88,8 +89,8 @@ export function DashboardView({ trips }: DashboardViewProps) {
                         const byVehicle = new Map<string, { initial: number; current: number }>();
                         (t.vehicleIds || []).forEach((vid) => {
                             const sv = segs
-                                .filter((s) => s.vehicleId === vid)
-                                .sort((a, b) => {
+                                .filter((s: Segment) => s.vehicleId === vid)
+                                .sort((a: Segment, b: Segment) => {
                                     const da = new Date(a.segmentDate).getTime();
                                     const db = new Date(b.segmentDate).getTime();
                                     if (da !== db) return da - db;

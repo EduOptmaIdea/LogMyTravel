@@ -36,6 +36,16 @@ export interface Vehicle {
   syncStatus?: 'synced' | 'pending' | 'error';
 }
 
+export interface Segment {
+  id: string;
+  tripId: string;
+  vehicleId: string;
+  initialKm?: number | null;
+  currentKm?: number | null;
+  segmentDate?: string | null;
+  created_at?: string | null;
+}
+
 export function useTrips() {
   const { user } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -326,6 +336,79 @@ export function useTrips() {
       }
       enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: [] } });
     },
-    ensureVehicleSynced: async () => true
+    ensureVehicleSynced: async () => true,
+    getTripVehicleSegments: async (tripId: string): Promise<Segment[]> => {
+      try {
+        if (!supabase || !tripId) return [];
+        const { data } = await supabase
+          .from("trip_vehicle_segments")
+          .select("*")
+          .eq("trip_id", tripId)
+          .order("segment_date", { ascending: true })
+          .order("created_at", { ascending: true });
+        const segs: Segment[] = (data as any[] | null | undefined)?.map((row: any) => ({
+          id: row.id,
+          tripId: row.trip_id,
+          vehicleId: row.vehicle_id,
+          initialKm: row.initial_km ?? null,
+          currentKm: row.current_km ?? null,
+          segmentDate: row.segment_date ?? null,
+          created_at: row.created_at ?? null,
+        })) ?? [];
+        return segs;
+      } catch {
+        return [];
+      }
+    },
+    deleteTripVehicleSegments: async (tripId: string, vehicleId: string): Promise<void> => {
+      if (!supabase) return;
+      await supabase
+        .from("trip_vehicle_segments")
+        .delete()
+        .eq("trip_id", tripId)
+        .eq("vehicle_id", vehicleId);
+    },
+    updateTripVehicleInitialKm: async (tripId: string, vehicleId: string, value: number): Promise<void> => {
+      if (!supabase) return;
+      await supabase
+        .from("trip_vehicles")
+        .update({ initial_km: value })
+        .eq("trip_id", tripId)
+        .eq("vehicle_id", vehicleId);
+    },
+    updateTripVehicleCurrentKm: async (tripId: string, vehicleId: string, value: number): Promise<void> => {
+      if (!supabase) return;
+      // Atualiza ou insere segmento com data de hoje
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      await supabase
+        .from("trip_vehicle_segments")
+        .insert([{ trip_id: tripId, vehicle_id: vehicleId, current_km: value, segment_date: dateStr }]);
+    },
+    saveTripVehicleSegment: async (payload: { tripId: string; vehicleId: string; initialKm?: number | null; currentKm?: number | null; segmentDate?: string | null }): Promise<Segment | null> => {
+      if (!supabase) return null;
+      const insert = {
+        trip_id: payload.tripId,
+        vehicle_id: payload.vehicleId,
+        initial_km: payload.initialKm ?? null,
+        current_km: payload.currentKm ?? null,
+        segment_date: payload.segmentDate ?? null,
+      };
+      const { data, error } = await supabase
+        .from("trip_vehicle_segments")
+        .insert([insert])
+        .select()
+        .single();
+      if (error) return null;
+      return {
+        id: data.id,
+        tripId: data.trip_id,
+        vehicleId: data.vehicle_id,
+        initialKm: data.initial_km ?? null,
+        currentKm: data.current_km ?? null,
+        segmentDate: data.segment_date ?? null,
+        created_at: data.created_at ?? null,
+      };
+    }
   };
 }

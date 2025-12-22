@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTrips } from "./useTrips";
+import type { Segment } from "./useTrips";
 import type { Trip } from "./useTrips";
 
 // --- Interfaces ---
@@ -485,8 +486,8 @@ export function TripComparisonWrapper({ trips }: TripComparisonWrapperProps) {
                     const byVehicle = new Map<string, { initial: number; current: number }>();
                     (t.vehicleIds || []).forEach((vid) => {
                         const sv = segs
-                            .filter((s) => s.vehicleId === vid)
-                            .sort((a, b) => {
+                            .filter((s: Segment) => s.vehicleId === vid)
+                            .sort((a: Segment, b: Segment) => {
                                 const da = new Date(a.segmentDate).getTime();
                                 const db = new Date(b.segmentDate).getTime();
                                 if (da !== db) return da - db;
