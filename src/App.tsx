@@ -22,15 +22,12 @@ import { useTrips as useTripsHook } from "./components/useTrips";
 import type { Trip } from "./components/useTrips";
 import { useWarningsModal } from "./components/hooks/useWarningsModal";
 
-// Tipagem de Trip passa a usar a definição do hook useTrips para evitar conflitos
-
 export default function App() {
   const { user, initializing } = useAuth();
   const { openModal, element: warningsModal } = useWarningsModal();
   const [selectedOngoingTripId, setSelectedOngoingTripId] =
     useState<string | null>(null);
 
-  // Integrar com Supabase via useTrips
   const {
     trips: cloudTrips,
     saveTrip,
@@ -48,7 +45,6 @@ export default function App() {
     ensureVehicleSynced,
   } = useTripsHook();
 
-  // Sempre renderizar trips do hook (usa localStorage quando não autenticado)
   const trips = cloudTrips;
   const ongoingTrips = trips.filter((trip) => trip.status === "ongoing");
   const hasOngoingTrip = ongoingTrips.length > 0;
@@ -61,15 +57,10 @@ export default function App() {
       const typeQuery = url?.searchParams.get("type")?.toLowerCase();
       const rawHash = typeof window !== "undefined" ? window.location.hash : "";
       const trimmedHash = rawHash.replace("#", "").trim();
-      // Interpretar o hash também como parâmetros (ex.: #type=recovery&access_token=...)
       const hashParams = new URLSearchParams(trimmedHash);
       const typeHash = hashParams.get("type")?.toLowerCase();
-
-      // Casos que identificam claramente o fluxo de recuperação
       const hashIsReset = trimmedHash === "reset-password";
       const hasRecoveryType = typeQuery === "recovery" || typeHash === "recovery";
-
-      // Não tratar presença de tokens como recuperação; apenas tipo explícito
       return hashIsReset || hasRecoveryType;
     } catch {
       return false;
@@ -90,9 +81,7 @@ export default function App() {
   >(() => (isRecoveryRoute ? "reset-password" : hasOngoingTrip ? "ongoing-trip" : "new-trip"));
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [tripToEdit, setTripToEdit] = useState<Trip | null>(
-    null,
-  );
+  const [tripToEdit, setTripToEdit] = useState<Trip | null>(null);
   const [showSplash, setShowSplash] = useState(() => {
     try {
       const seen = typeof window !== 'undefined' ? localStorage.getItem('splash_seen') === '1' : false;
@@ -100,13 +89,9 @@ export default function App() {
     } catch { return !isRecoveryRoute; }
   });
   const [isRecoveryFlow, setIsRecoveryFlow] = useState<boolean>(() => isRecoveryRoute);
-  const [searchTerm, setSearchTerm] = useState(""); // Filtro por nome
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "ongoing" | "completed"
-  >("all"); // Filtro por status
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
-    "desc",
-  ); // Ordenação
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "ongoing" | "completed">("all");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -130,7 +115,7 @@ export default function App() {
     mainContentRef.current?.scrollTo({ top: 0 });
   }, [activeView]);
 
-  // Navegação por hash para fluxo de redefinição de senha (#reset-password)
+  // Navegação por hash para fluxo de redefinição de senha
   useEffect(() => {
     const applyHashRoute = () => {
       const hash = window.location.hash.replace('#', '').trim();
@@ -147,7 +132,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', applyHashRoute);
   }, []);
 
-  // Detecta clique no link de recuperação enviado por e-mail (type=recovery)
+  // Detecta clique no link de recuperação (type=recovery)
   useEffect(() => {
     try {
       const url = new URL(window.location.href);
@@ -175,68 +160,8 @@ export default function App() {
     });
     return () => subscription?.subscription?.unsubscribe();
   }, []);
-  
-  useEffect(() => {
-    const hash = (s: string) => {
-      let h = 0;
-      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-      return String(h);
-    };
-    let timer: any = null;
-    const check = async () => {
-      try {
-        const res = await fetch(`/?_=${Date.now()}`, { cache: 'no-store' });
-        const txt = await res.text();
-        const h = hash(txt);
-        const prev = localStorage.getItem('app_index_hash');
-        if (prev && prev !== h) {
-          localStorage.setItem('app_index_hash', h);
-          window.location.reload();
-          return;
-        }
-        localStorage.setItem('app_index_hash', h);
-      } catch {}
-    };
-    check();
-    timer = setInterval(check, 60000);
-    const onVis = () => {
-      if (document.visibilityState === 'visible') check();
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => {
-      if (timer) clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-  }, []);
-  
-  useEffect(() => {
-    const clearCachesAndReload = async () => {
-      try {
-        Object.keys(localStorage)
-          .filter((k) => k === 'trips' || k === 'vehicles' || k === 'trip_vehicle_segments' || k === 'trips_cache' || k === 'vehicles_cache' || k === 'vehicles_sync')
-          .forEach((k) => { try { localStorage.removeItem(k); } catch {} });
-        try { sessionStorage.clear(); } catch {}
-        try {
-          if ('caches' in window) {
-            const keys = await caches.keys();
-            await Promise.all(keys.map((k) => caches.delete(k)));
-          }
-        } catch {}
-      } finally {
-        try { window.location.reload(); } catch {}
-      }
-    };
-    const supa = supabase;
-    if (!supa) return;
-    const ch = supa.channel('reload-on-change')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, clearCachesAndReload)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, clearCachesAndReload)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stops' }, clearCachesAndReload)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicle_segments' }, clearCachesAndReload)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicles' }, clearCachesAndReload)
-      .subscribe();
-    return () => { try { supa.removeChannel(ch); } catch {} };
-  }, []);
+
+  // 👇 REMOVIDO: o useEffect com window.location.reload() e limpeza de cache
 
   useEffect(() => {
     if (initializing || loadingTrips) return;
@@ -263,7 +188,7 @@ export default function App() {
     }
   }, [user, isRecoveryFlow, initializing]);
 
-  // Primeiro clique em qualquer área → solicitar login/criar conta
+  // Primeiro clique → solicitar login/criar conta
   useEffect(() => {
     if (user || isRecoveryFlow) return;
     const handler = () => {
@@ -279,8 +204,8 @@ export default function App() {
     window.addEventListener('click', handler, true);
     return () => window.removeEventListener('click', handler, true);
   }, [user, isRecoveryFlow]);
-  
-  // Gate de login para Menu e telas derivadas (exceto reset-password)
+
+  // Gate de login para telas protegidas
   useEffect(() => {
     if (initializing) return;
     const protectedViews = new Set(["menu", "faqs", "about", "my-trips", "dashboard", "vehicles"]);
@@ -296,10 +221,7 @@ export default function App() {
     }
   }, [activeView, user, initializing]);
 
-  const handleEditEndKm = async (
-    tripId: string,
-    newEndKm: number,
-  ) => {
+  const handleEditEndKm = async (tripId: string, newEndKm: number) => {
     try {
       await updateTrip(tripId, { endKm: newEndKm });
     } catch (e) {
@@ -307,11 +229,7 @@ export default function App() {
     }
   };
 
-  // Atualizar KM inicial na viagem atual
-  const handleEditStartKm = async (
-    tripId: string,
-    newStartKm: number,
-  ) => {
+  const handleEditStartKm = async (tripId: string, newStartKm: number) => {
     try {
       await updateTrip(tripId, { startKm: newStartKm });
     } catch (e) {
@@ -331,12 +249,10 @@ export default function App() {
     vehicleIds: string[];
     status: "ongoing";
   }) => {
-    // Gate de autenticação com confirmação
     if (!user) {
       openModal({
         title: "Login necessário",
-        message:
-          "Você precisa estar logado para salvar sua viagem.",
+        message: "Você precisa estar logado para salvar sua viagem.",
         confirmText: "Entrar agora",
         cancelText: "Cancelar",
         onConfirm: () => setActiveView("login"),
@@ -358,12 +274,9 @@ export default function App() {
         hasVehicle: tripData.hasVehicle,
         vehicleIds: tripData.vehicleIds,
       });
-      // Seleciona a mais nova viagem e vai para Viagem atual
       setSelectedOngoingTripId(saved.id);
       setActiveView("ongoing-trip");
     } catch (e) {
-      // Se a gravação na nuvem falhar, seguimos em frente com o estado local,
-      // pois o hook useTrips já faz fallback para localStorage e atualiza o estado.
       const message = (e as any)?.message || "Falha ao salvar a viagem. Dados locais foram atualizados.";
       toast.error(message);
       setActiveView("ongoing-trip");
@@ -422,7 +335,6 @@ export default function App() {
     }
   };
 
-  // Desvincular veículo da viagem: torna hasVehicle=false, limpa vehicleIds e KM
   const handleUnlinkVehicleFromTrip = async (tripId: string) => {
     try {
       await updateTrip(tripId, {
@@ -431,7 +343,6 @@ export default function App() {
         startKm: null,
         endKm: null,
       });
-      // Cascata no Supabase: remover todos vínculos e segmentos
       await unlinkAllVehiclesFromTrip(tripId);
       toast.success("Veículo removido da viagem. KM inicial/final apagados.");
     } catch (e) {
@@ -439,11 +350,7 @@ export default function App() {
     }
   };
 
-  // Remover um veículo específico da viagem
-  const handleDetachVehicleFromTrip = async (
-    tripId: string,
-    vehicleId: string,
-  ) => {
+  const handleDetachVehicleFromTrip = async (tripId: string, vehicleId: string) => {
     try {
       const currentTrip = trips.find((t) => t.id === tripId);
       const currentIds = currentTrip?.vehicleIds ?? [];
@@ -451,11 +358,9 @@ export default function App() {
       await updateTrip(tripId, {
         hasVehicle: nextIds.length > 0,
         vehicleIds: nextIds,
-        // Quando remover o último veículo, limpamos KM
         startKm: nextIds.length > 0 ? currentTrip?.startKm ?? null : null,
         endKm: nextIds.length > 0 ? currentTrip?.endKm ?? null : null,
       });
-      // Remover vínculo e segmentos no Supabase
       await unlinkVehicleFromTrip(tripId, vehicleId);
       toast.success("Veículo desvinculado da viagem.");
     } catch (e) {
@@ -463,14 +368,12 @@ export default function App() {
     }
   };
 
-  // Vincular veículo novamente: define hasVehicle=true, vehicleIds e KM inicial (opcional)
   const handleAttachVehicleToTrip = async (
     tripId: string,
     vehicleId: string,
     startKm?: number | null,
   ) => {
     try {
-      // Recupera a viagem atual para anexar incrementalmente
       const currentTrip = trips.find((t) => t.id === tripId);
       const currentIds = currentTrip?.vehicleIds ?? [];
       const nextIds = currentIds.includes(vehicleId)
@@ -483,7 +386,6 @@ export default function App() {
         startKm: startKm ?? currentTrip?.startKm ?? null,
         endKm: null,
       });
-      // Criar/atualizar vínculo no Supabase e inicializar KM se fornecido
       await linkVehicleToTrip(tripId, vehicleId, startKm ?? null);
       toast.success("Veículo vinculado à viagem.");
     } catch (e) {
@@ -497,86 +399,55 @@ export default function App() {
   };
 
   const handleSplashComplete = () => {
-    try { if (typeof window !== 'undefined') localStorage.setItem('splash_seen', '1'); } catch {}
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem('splash_seen', '1');
+    } catch {}
     setShowSplash(false);
   };
 
-  // Função para converter dd/MM/yyyy HH:mm → timestamp
-  const parseDateTime = (
-    dateStr: string,
-    timeStr: string,
-  ): number => {
+  const parseDateTime = (dateStr: string, timeStr: string): number => {
     const [d, m, y] = dateStr.split("/").map(Number);
     const [h, min] = timeStr.split(":").map(Number);
-    if (
-      isNaN(d) ||
-      isNaN(m) ||
-      isNaN(y) ||
-      isNaN(h) ||
-      isNaN(min)
-    ) {
-      return 0; // fallback
+    if (isNaN(d) || isNaN(m) || isNaN(y) || isNaN(h) || isNaN(min)) {
+      return 0;
     }
     return new Date(y, m - 1, d, h, min).getTime();
   };
 
-  // 🔁 Filtrar e ordenar viagens
   const filteredAndSortedTrips = [...trips]
     .filter((trip) => {
       if (filterStatus === "all") return true;
-      if (filterStatus === "ongoing")
-        return trip.status === "ongoing";
-      if (filterStatus === "completed")
-        return trip.status === "completed";
+      if (filterStatus === "ongoing") return trip.status === "ongoing";
+      if (filterStatus === "completed") return trip.status === "completed";
       return true;
     })
-    .filter((trip) =>
-      trip.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-    )
+    .filter((trip) => trip.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
       if (a.status !== b.status) {
         return a.status === "ongoing" ? -1 : 1;
       }
-      const timeA = parseDateTime(
-        a.departureDate,
-        a.departureTime,
-      );
-      const timeB = parseDateTime(
-        b.departureDate,
-        b.departureTime,
-      );
-      return sortOrder === "asc"
-        ? timeA - timeB
-        : timeB - timeA;
+      const timeA = parseDateTime(a.departureDate, a.departureTime);
+      const timeB = parseDateTime(b.departureDate, b.departureTime);
+      return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
     });
 
   if (showSplash) {
     return <SplashScreen onReady={handleSplashComplete} />;
   }
-  
+
   const newTripButtonBottomMyTrips = "bottom-24";
-  const scrollToTopButtonBottom = 
-    activeView === "my-trips" ? "bottom-36" : "bottom-24";
-    activeView === "new-trip" ? "bottom-36" : "bottom-24";
-    activeView === "ongoing-trip" ? "bottom-36" : "bottom-24";
-  
+  const scrollToTopButtonBottom = activeView === "my-trips" ? "bottom-36" : "bottom-24";
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <TripHeader onOpenLogin={() => setActiveView("login")} /> 
+      <TripHeader onOpenLogin={() => setActiveView("login")} />
 
-      <main
-        ref={mainContentRef}
-        className={`flex-1 overflow-y-auto scroll-smooth`}
-      >
-
-        <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto px-4 md:px-6 pt-[72px] pb-24 lg:pb-28"> 
-
+      <main ref={mainContentRef} className={`flex-1 overflow-y-auto scroll-smooth`}>
+        <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto px-4 md:px-6 pt-[72px] pb-24 lg:pb-28">
           {activeView === "new-trip" && <PromoCarousel />}
           {activeView === "new-trip" && (
-            <TripNew 
-              onSaveTrip={handleSaveNewTrip} 
+            <TripNew
+              onSaveTrip={handleSaveNewTrip}
               onRequireLogin={() => setActiveView("login")}
               vehicles={vehicles}
               saveVehicle={saveVehicle}
@@ -585,9 +456,9 @@ export default function App() {
           )}
 
           {activeView === "login" && (
-            <Login 
-              onSuccess={() => setActiveView(hasOngoingTrip ? "ongoing-trip" : "new-trip")} 
-              onCancel={() => setActiveView(hasOngoingTrip ? "ongoing-trip" : "new-trip")} 
+            <Login
+              onSuccess={() => setActiveView(hasOngoingTrip ? "ongoing-trip" : "new-trip")}
+              onCancel={() => setActiveView(hasOngoingTrip ? "ongoing-trip" : "new-trip")}
             />
           )}
 
@@ -612,21 +483,15 @@ export default function App() {
 
           {activeView === "my-trips" && (
             <>
-              <div className="px-4 py-6 space-y-4"> 
-                <h2 className="text-xl font-bold text-gray-800 mb-4">
-                  Minhas viagens
-                </h2>
-
-                {/* Filtros */}
+              <div className="px-4 py-6 space-y-4">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Minhas viagens</h2>
                 <div className="flex gap-2 mb-4">
                   <div className="relative flex-1">
                     <input
                       type="text"
                       placeholder="Buscar viagem..."
                       value={searchTerm}
-                      onChange={(e) =>
-                        setSearchTerm(e.target.value)
-                      }
+                      onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full p-2 border rounded-md text-sm"
                     />
                     {searchTerm && (
@@ -640,9 +505,7 @@ export default function App() {
                   </div>
                   <select
                     value={filterStatus}
-                    onChange={(e) =>
-                      setFilterStatus(e.target.value as any)
-                    }
+                    onChange={(e) => setFilterStatus(e.target.value as any)}
                     className="p-2 border rounded-md text-sm"
                   >
                     <option value="all">Todas</option>
@@ -650,11 +513,7 @@ export default function App() {
                     <option value="completed">Encerradas</option>
                   </select>
                   <button
-                    onClick={() =>
-                      setSortOrder(
-                        sortOrder === "asc" ? "desc" : "asc",
-                      )
-                    }
+                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                     className="p-2 border rounded-md text-sm flex items-center gap-1"
                   >
                     {sortOrder === "asc" ? "↑" : "↓"} Data
@@ -664,9 +523,7 @@ export default function App() {
                 <div className="space-y-4">
                   {filteredAndSortedTrips.length === 0 ? (
                     <p className="text-gray-500">
-                      {trips.length === 0
-                        ? "Nenhuma viagem registrada ainda."
-                        : "Nenhuma viagem encontrada."}
+                      {trips.length === 0 ? "Nenhuma viagem registrada ainda." : "Nenhuma viagem encontrada."}
                     </p>
                   ) : (
                     filteredAndSortedTrips.map((trip) => (
@@ -674,9 +531,7 @@ export default function App() {
                         key={trip.id}
                         trip={trip as any}
                         onEdit={() => handleEditTrip(trip as any)}
-                        onDelete={() =>
-                          handleDeleteOngoingTrip(trip.id)
-                        }
+                        onDelete={() => handleDeleteOngoingTrip(trip.id)}
                         vehicles={vehicles}
                         saveVehicle={saveVehicle}
                         updateVehicle={updateVehicle}
@@ -691,41 +546,20 @@ export default function App() {
                 className={`fixed ${newTripButtonBottomMyTrips} right-4 w-12 h-12 rounded-full bg-fuchsia-500 text-white flex items-center justify-center shadow-lg hover:bg-fuchsia-600 transition-colors z-20`}
                 aria-label="Nova viagem"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </button>
             </>
           )}
 
-          {activeView === "dashboard" && (
-            <DashboardView trips={trips} />
-          )}
-          {activeView === "menu" && (
-            <MenuView vehicles={vehicles} onViewChange={setActiveView} />
-          )}
-          {activeView === "reset-password" && (
-            <ResetPassword onSuccess={() => setActiveView(hasOngoingTrip ? 'ongoing-trip' : 'new-trip')} />
-          )}
-          {activeView === "faqs" && (
-            <FaqsView />
-          )}
-          {activeView === "about" && (
-            <AboutView />
-          )}
+          {activeView === "dashboard" && <DashboardView trips={trips} />}
+          {activeView === "menu" && <MenuView vehicles={vehicles} onViewChange={setActiveView} />}
+          {activeView === "reset-password" && <ResetPassword onSuccess={() => setActiveView(hasOngoingTrip ? 'ongoing-trip' : 'new-trip')} />}
+          {activeView === "faqs" && <FaqsView />}
+          {activeView === "about" && <AboutView />}
           {activeView === "vehicles" && (
-            <VehiclesView 
+            <VehiclesView
               vehicles={vehicles}
               trips={trips}
               loadingVehicles={loadingTrips}
@@ -743,24 +577,11 @@ export default function App() {
       {showScrollToTop && (
         <button
           onClick={scrollToTop}
-          className={`
-            fixed ${scrollToTopButtonBottom} right-4 w-12 h-12 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-xl hover:bg-teal-800 transition-all duration-300 z-30
-          `}
+          className={`fixed ${scrollToTopButtonBottom} right-4 w-12 h-12 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-xl hover:bg-teal-800 transition-all duration-300 z-30`}
           aria-label="Voltar ao Topo"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 10l7-7m0 0l7 7m-7-7v18"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
           </svg>
         </button>
       )}
