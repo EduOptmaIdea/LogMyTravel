@@ -116,10 +116,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (typeof window !== 'undefined') {
           Object.keys(localStorage)
-            .filter((k) => k.startsWith('sb-') || k === 'trips' || k === 'vehicles' || k === 'trip_vehicle_segments')
+            .filter((k) => k.startsWith('sb-') || k === 'trips' || k === 'vehicles' || k === 'trip_vehicle_segments' || k === 'trips_cache' || k === 'vehicles_cache' || k === 'vehicles_sync')
             .forEach((k) => {
               try { localStorage.removeItem(k); } catch {}
             });
+          try { sessionStorage.clear(); } catch {}
+          try {
+            if ('caches' in window) {
+              caches.keys().then((keys) => keys.forEach((k) => { try { caches.delete(k); } catch {} }));
+            }
+          } catch {}
         }
       } catch {}
       try { if (typeof window !== 'undefined') { window.location.hash = ''; } } catch {}
