@@ -171,6 +171,17 @@ export function useTrips() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      // Primeiro paint: mostrar imediatamente dados locais/cache enquanto sincroniza
+      try {
+        const localTrips = loadFromLocalStorage("trips");
+        const cacheTrips = loadCache("trips_cache");
+        const initialTrips = (localTrips && localTrips.length > 0 ? localTrips : cacheTrips) || [];
+        if (initialTrips.length > 0) setTrips(initialTrips);
+        const localVehicles = loadFromLocalStorage("vehicles");
+        const cacheVehicles = loadCache("vehicles_cache");
+        const initialVehicles = (localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || [];
+        if (initialVehicles.length > 0) setVehicles(initialVehicles);
+      } catch {}
       const supabase = getSupabase();
       if (!supabase) {
         setError('Supabase não configurado. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
