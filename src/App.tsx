@@ -168,11 +168,46 @@ export default function App() {
         setIsRecoveryFlow(true);
         setActiveView('reset-password');
         setShowSplash(false);
+      } else if (event === 'SIGNED_OUT') {
+        setActiveView('login');
+        setShowSplash(false);
       }
     });
     return () => subscription?.subscription?.unsubscribe();
   }, []);
   
+  useEffect(() => {
+    const hash = (s: string) => {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+      return String(h);
+    };
+    let timer: any = null;
+    const check = async () => {
+      try {
+        const res = await fetch(`/?_=${Date.now()}`, { cache: 'no-store' });
+        const txt = await res.text();
+        const h = hash(txt);
+        const prev = localStorage.getItem('app_index_hash');
+        if (prev && prev !== h) {
+          localStorage.setItem('app_index_hash', h);
+          window.location.reload();
+          return;
+        }
+        localStorage.setItem('app_index_hash', h);
+      } catch {}
+    };
+    check();
+    timer = setInterval(check, 60000);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
 
   useEffect(() => {
     if (initializing || loadingTrips) return;
