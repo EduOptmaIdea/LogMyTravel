@@ -567,11 +567,10 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     let prevKm = initialKmBase;
     let cumulativeSoFar = 0;
     let lastVariation = 0; // variação da parada anterior (saída - chegada)
-    return stops.map((s) => {
+    return stops.map((s, idx) => {
       const arr = typeof s.arrivalKm === 'number' ? s.arrivalKm : prevKm;
       const dep = typeof s.departureKm === 'number' ? s.departureKm : null;
-      // Distância até a parada: chegada - km anterior
-      const distanceToStop = Math.max(0, (typeof arr === 'number' ? arr : prevKm) - (prevKm ?? initialKmBase));
+      const distanceToStop = idx === 0 ? 0 : Math.max(0, (typeof arr === 'number' ? arr : prevKm) - (prevKm ?? initialKmBase));
       // Km até a parada (acumulado): km anterior acumulado + variação da parada anterior + distância até a parada
       cumulativeSoFar = Math.max(0, cumulativeSoFar + (lastVariation || 0) + distanceToStop);
       // Calcula variação da parada atual para próxima iteração

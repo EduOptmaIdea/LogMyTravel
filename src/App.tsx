@@ -208,6 +208,34 @@ export default function App() {
       document.removeEventListener('visibilitychange', onVis);
     };
   }, []);
+  
+  useEffect(() => {
+    const clearCachesAndReload = async () => {
+      try {
+        Object.keys(localStorage)
+          .filter((k) => k === 'trips' || k === 'vehicles' || k === 'trip_vehicle_segments' || k === 'trips_cache' || k === 'vehicles_cache' || k === 'vehicles_sync')
+          .forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+        try { sessionStorage.clear(); } catch {}
+        try {
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((k) => caches.delete(k)));
+          }
+        } catch {}
+      } finally {
+        try { window.location.reload(); } catch {}
+      }
+    };
+    if (!supabase) return;
+    const ch = supabase.channel('reload-on-change')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, clearCachesAndReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, clearCachesAndReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stops' }, clearCachesAndReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicle_segments' }, clearCachesAndReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicles' }, clearCachesAndReload)
+      .subscribe();
+    return () => { try { supabase.removeChannel(ch); } catch {} };
+  }, []);
 
   useEffect(() => {
     if (initializing || loadingTrips) return;
