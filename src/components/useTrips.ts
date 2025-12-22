@@ -176,6 +176,7 @@ export function useTrips() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const [refreshCount, setRefreshCount] = useState(0);
 
   // Carregar dados ao montar e quando o usuário mudar
   useEffect(() => {
@@ -394,6 +395,26 @@ export function useTrips() {
     };
 
     loadData();
+  }, [user?.id, refreshCount]);
+
+  // Realtime: ouvir mudanças nas tabelas e atualizar dinamicamente
+  useEffect(() => {
+    const supa = getSupabase();
+    if (!supa) return;
+    const channel = supa.channel('realtime-travel');
+    const onChange = () => setRefreshCount((c) => c + 1);
+    try {
+      channel
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'stops' }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicle_segments' }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicles' }, onChange)
+        .subscribe();
+    } catch {}
+    return () => {
+      try { supa.removeChannel(channel); } catch {}
+    };
   }, [user?.id]);
 
   // Ouvir atualizações de localStorage para sincronizar listas sem reload
@@ -852,6 +873,15 @@ export function useTrips() {
     stop: Omit<Stop, "id" | "createdAt">,
   ): Promise<Stop> => {
     const supabase = getSupabase();
+    // Capturar localização do dispositivo se não fornecida
+    try {
+      if (!stop.location && typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+        const pos: GeolocationPosition = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        });
+        (stop as any).location = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      }
+    } catch {}
     const newStop = {
       ...stop,
       id: safeRandomUUID(),
@@ -1678,6 +1708,16 @@ export function useTrips() {
           .eq("trip_id", tripId)
           .eq("vehicle_id", vehicleId)
           .eq("user_id", user.id);
+      } else {
+        // Fallback service role
+        try {
+          const fnRes = await fetch(import.meta.env.DEV ? "/trip-vehicles-delete" : "/.netlify/functions/trip-vehicles-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ trip_id: tripId, vehicle_id: vehicleId }),
+          });
+          await fnRes.json().catch(() => ({}));
+        } catch {}
       }
     } catch (e) {
       console.warn("Falha ao remover vínculo trip_vehicles no Supabase:", e);
