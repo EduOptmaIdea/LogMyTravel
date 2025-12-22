@@ -580,15 +580,13 @@ export function useTrips() {
     vehicle: Omit<Vehicle, "id">,
   ): Promise<Vehicle> => {
     const supabase = getSupabase();
-      const newVehicle = { ...vehicle, id: safeRandomUUID(), active: vehicle.active ?? true };
-
-    if (!supabase || !user?.id) throw new Error('É necessário estar autenticado e com Supabase configurado para salvar veículos.');
+    const newVehicle = { ...vehicle, id: safeRandomUUID(), active: vehicle.active ?? true };
 
     try {
       // Converter camelCase para snake_case
       const vehicleData = {
         id: newVehicle.id,
-        user_id: user.id,
+        user_id: user?.id ?? null,
         nickname: newVehicle.nickname,
         category: newVehicle.category,
         make: newVehicle.make,
@@ -602,11 +600,10 @@ export function useTrips() {
         photo_url: newVehicle.photoUrl ?? null,
         photo_path: newVehicle.photoPath ?? null,
         active: newVehicle.active ?? true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
-      const vins = await supabase
-        .from("vehicles")
-        .insert([vehicleData]);
-      if (vins.error) throw vins.error;
+      // Atualiza UI e caches imediatamente (otimista)
       const savedVehicle: Vehicle = {
         id: newVehicle.id,
         nickname: newVehicle.nickname,
@@ -625,15 +622,48 @@ export function useTrips() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-
       const updatedVehicles = [savedVehicle, ...vehicles];
       setVehicles(updatedVehicles);
       saveCache("vehicles_cache", updatedVehicles);
       saveToLocalStorage("vehicles", updatedVehicles);
+
+      // Dispara insert no servidor em segundo plano
+      if (supabase && user?.id) {
+        supabase
+          .from("vehicles")
+          .insert([vehicleData])
+          .then((res) => {
+            if (res.error) {
+              console.warn("Falha ao inserir veículo na nuvem:", res.error.message || res.error);
+            }
+          })
+          .catch((e) => {
+            console.warn("Exceção ao inserir veículo na nuvem:", e);
+          });
+      }
+
       return savedVehicle;
     } catch (err: any) {
-      console.error("Erro ao salvar veículo no Supabase:", err);
-      throw new Error('Falha ao salvar veículo na nuvem.');
+      // Ainda assim, mantemos o otimista acima; aqui só reportamos no console
+      console.error("Erro ao preparar salvamento de veículo:", err);
+      return {
+        id: newVehicle.id,
+        nickname: newVehicle.nickname,
+        category: newVehicle.category,
+        make: newVehicle.make,
+        model: newVehicle.model,
+        color: newVehicle.color,
+        year: newVehicle.year,
+        licensePlate: newVehicle.licensePlate,
+        vehicleType: newVehicle.vehicleType,
+        kmInitial: newVehicle.kmInitial,
+        fuels: newVehicle.fuels,
+        photoUrl: newVehicle.photoUrl ?? null,
+        photoPath: newVehicle.photoPath ?? null,
+        active: (typeof newVehicle.active === 'boolean') ? newVehicle.active : true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     }
   };
 
