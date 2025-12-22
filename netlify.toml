@@ -1,17 +1,23 @@
 [build]
   command = "npm run build"
-  publish = "build"
+  publish = "dist"
 
-# Optional: Use Node 20 for Netlify build image
-[build.environment]
-  NODE_VERSION = "20"
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=600, must-revalidate"
 
-# Ensure SPA routes fallback to index.html (also provided via public/_redirects)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
