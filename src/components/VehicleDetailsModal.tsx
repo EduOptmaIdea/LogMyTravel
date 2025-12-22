@@ -157,7 +157,11 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
       <div className="sticky top-0 z-[1001] bg-white border-b border-gray-200">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3 justify-between">
           <div className="flex-1 flex items-center gap-3 justify-start">
-            <div className="h-16 w-16 rounded-xl overflow-hidden bg-gray-100 shadow-sm flex items-center justify-center">
+            <div
+              className="h-16 w-16 rounded-xl overflow-hidden bg-gray-100 shadow-sm flex items-center justify-center cursor-zoom-in"
+              onClick={() => { if (vehicle.photoUrl) setLightboxUrl(vehicle.photoUrl); }}
+              aria-label="Ampliar imagem do veículo"
+            >
               {vehicle.photoUrl ? (
                 <img src={vehicle.photoUrl} alt={title} className="h-full w-full object-cover" />
               ) : (
@@ -380,12 +384,16 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
         <div className="flex gap-3 mr-2">
           {!isEditing && (
             <button
+              type="button"
               onClick={() => setIsEditing(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-fuchsia-600 text-white shadow"
+              className="px-4 py-2 rounded-full bg-fuchsia-600 text-white shadow"
               title="Editar"
+              aria-label="Editar veículo"
             >
-              <Pencil size={16} />
-              <span>Editar</span>
+              <span className="inline-flex items-center gap-2">
+                <Pencil size={16} />
+                <span>Editar</span>
+              </span>
             </button>
           )}
           {isEditing && (
