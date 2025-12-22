@@ -23,6 +23,15 @@ export interface Vehicle {
   photoUrl?: string | null;
   photoPath?: string | null;
   active?: boolean;
+  category?: string;
+  make?: string;
+  model?: string;
+  color?: string;
+  year?: number;
+  vehicleType?: string;
+  kmInitial?: number | null;
+  fuels?: string[];
+  syncStatus?: 'synced' | 'pending' | 'error';
 }
 
 export function useTrips() {
@@ -67,6 +76,15 @@ export function useTrips() {
           photoUrl: row.photo_url ?? null,
           photoPath: row.photo_path ?? null,
           active: typeof row.active === "boolean" ? row.active : true,
+          category: row.category ?? undefined,
+          make: row.make ?? undefined,
+          model: row.model ?? undefined,
+          color: row.color ?? undefined,
+          year: typeof row.year === "number" ? row.year : undefined,
+          vehicleType: row.vehicle_type ?? undefined,
+          kmInitial: typeof row.km_initial === "number" ? row.km_initial : null,
+          fuels: Array.isArray(row.fuels) ? row.fuels : [],
+          syncStatus: row.sync_status ?? undefined,
         }));
         setVehicles(mappedV);
       }

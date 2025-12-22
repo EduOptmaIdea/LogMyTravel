@@ -1,4 +1,4 @@
-1→import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import { PlusCircle, ChevronRight } from "lucide-react";
 import VehicleDetailsModal from "./VehicleDetailsModal";
