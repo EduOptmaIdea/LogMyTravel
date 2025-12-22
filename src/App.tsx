@@ -182,6 +182,12 @@ export default function App() {
   }, [hasOngoingTrip]);
 
   useEffect(() => {
+    if (user && hasOngoingTrip && !isRecoveryFlow && activeView !== 'reset-password') {
+      setActiveView('ongoing-trip');
+    }
+  }, [user, hasOngoingTrip, isRecoveryFlow]);
+
+  useEffect(() => {
     if (!user) {
       // Não sobrescrever fluxo de recuperação
       setSelectedOngoingTripId(null);
@@ -514,8 +520,8 @@ export default function App() {
 
           {activeView === "login" && (
             <Login 
-              onSuccess={() => setActiveView("new-trip")} 
-              onCancel={() => setActiveView("new-trip")} 
+              onSuccess={() => setActiveView(hasOngoingTrip ? "ongoing-trip" : "new-trip")} 
+              onCancel={() => setActiveView(hasOngoingTrip ? "ongoing-trip" : "new-trip")} 
             />
           )}
 
