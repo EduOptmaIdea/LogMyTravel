@@ -226,15 +226,16 @@ export default function App() {
         try { window.location.reload(); } catch {}
       }
     };
-    if (!supabase) return;
-    const ch = supabase.channel('reload-on-change')
+    const supa = supabase;
+    if (!supa) return;
+    const ch = supa.channel('reload-on-change')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, clearCachesAndReload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, clearCachesAndReload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stops' }, clearCachesAndReload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicle_segments' }, clearCachesAndReload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_vehicles' }, clearCachesAndReload)
       .subscribe();
-    return () => { try { supabase.removeChannel(ch); } catch {} };
+    return () => { try { supa.removeChannel(ch); } catch {} };
   }, []);
 
   useEffect(() => {
