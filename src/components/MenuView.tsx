@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CircleUser, MessageSquare, FileText, Info, LogOut, Car, Wallet } from "lucide-react";
 import ProfileModal from "./ProfileModal";
 import { useAuth } from "../utils/auth/AuthProvider";
+import { useLogout } from "../utils/hooks/useLogout";
 import type { Vehicle } from "./useTrips";
 import { useWarningsModal } from "./hooks/useWarningsModal";
 
@@ -12,6 +13,7 @@ type MenuViewProps = {
 
 export function MenuView({ vehicles, onViewChange }: MenuViewProps) {
   const { user, signOut } = useAuth();
+  const { logout } = useLogout();
   const [showProfile, setShowProfile] = useState(false);
   const lastAccess = user?.last_sign_in_at ? new Date(user.last_sign_in_at) : null;
   const currentAccess = new Date();
@@ -87,16 +89,7 @@ export function MenuView({ vehicles, onViewChange }: MenuViewProps) {
           <span className="font-semibold">Sobre</span>
         </button>
         <button
-          onClick={async () => {
-            try {
-              await signOut();
-            } catch (error) {
-              console.error("Erro logout menu:", error);
-            } finally {
-              localStorage.clear();
-              window.location.reload(); // Isso vai forçar o app a reiniciar na tela de Login
-            }
-          }}
+          onClick={logout}
           className="w-full flex items-center gap-3 p-4 hover:bg-gray-50"
         >
           <LogOut className="text-red-600" />

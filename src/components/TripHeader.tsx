@@ -1,28 +1,11 @@
 import { CircleUser, X } from "lucide-react";
 import { useAuth } from "../utils/auth/AuthProvider";
+import { useLogout } from "../utils/hooks/useLogout";
 import logo from "@/assets/logo-do-fundo-branco.png";
 
 export function TripHeader({ onOpenLogin }: { onOpenLogin?: () => void }) {
-  const { user, signOut } = useAuth();
-
-const handleSignOut = async () => {
-    try {
-        // 1. Tenta avisar o Supabase
-        await signOut(); 
-    } catch (error) {
-        console.error("Erro ao tentar sair, forçando saída local:", error);
-    } finally {
-        // 2. O PULO DO GATO:
-        // Limpa o LocalStorage (onde o Supabase e o App guardam tokens/dados)
-        localStorage.clear(); 
-        sessionStorage.clear();
-
-        // 3. Força um reload da página.
-        // Isso garante que o Cache do navegador (Netlify/PWA) seja ignorado
-        // e o app volte para o estado zero (tela de login).
-        window.location.reload(); 
-    }
-};
+  const { user } = useAuth();
+  const { logout } = useLogout();
 
   return (
     <>
@@ -49,7 +32,7 @@ const handleSignOut = async () => {
                 </span>
               </div>
               <button
-                onClick={handleSignOut}
+                onClick={logout}
                 className="p-2 bg-white/10 hover:bg-white/20 rounded-full"
                 aria-label="Sair"
                 title="Sair"
