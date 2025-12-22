@@ -30,7 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Carrega sessão atual
-    supabase.auth.getSession().then(({ data }) => {
+    const sb = supabase!;
+    sb.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Ouve mudanças de auth
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    const { data: sub } = sb.auth.onAuthStateChange(async (event, newSession) => {
       setSession(newSession ?? null);
       setUser(newSession?.user ?? null);
 
@@ -53,17 +54,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const birth_date = meta.birth_date || null;
 
           // Upsert (cria/atualiza) perfil sempre com os metadados mais recentes
-          await supabase.from('profiles').upsert({ id: uid, full_name, nickname, whatsapp, birth_date });
+          await sb.from('profiles').upsert({ id: uid, full_name, nickname, whatsapp, birth_date });
 
           // Envia boas-vindas apenas se ainda não foi enviado
-          const { data: row } = await supabase.from('profiles').select('welcome_sent_at, id').eq('id', uid).single();
+          const { data: row } = await sb.from('profiles').select('welcome_sent_at, id').eq('id', uid).single();
           if (row && !row.welcome_sent_at) {
             try {
               const to = u.email as string | undefined;
               if (to) {
                 await fetch(serverPath('send-welcome'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to }) });
                 // marca como enviado
-                await supabase.from('profiles').update({ welcome_sent_at: new Date().toISOString() }).eq('id', uid);
+                await sb.from('profiles').update({ welcome_sent_at: new Date().toISOString() }).eq('id', uid);
               }
             } catch {}
           }
