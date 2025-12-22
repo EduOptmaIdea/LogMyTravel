@@ -243,7 +243,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
         {/* Ações: Excluir imediatamente (sempre disponível) e Desativar */}
         <div className="flex flex-col gap-4">
-          <div className="space-y-2">
+          <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
             <label className="block text-xs text-gray-500">Confirme sua senha para excluir permanentemente</label>
             <input
               type="password"
@@ -253,6 +253,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               className="w-full border rounded-md px-3 py-2"
             />
             <button
+              type="button"
               onClick={confirmDeleteAccount}
               className="w-full px-4 py-2 rounded-full bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
             >
@@ -261,7 +262,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             {hasRecords && (
               <p className="text-xs text-red-600">Você possui dados associados; eles serão apagados junto com a exclusão da conta.</p>
             )}
-          </div>
+          </form>
 
           <div className="space-y-2">
             <button

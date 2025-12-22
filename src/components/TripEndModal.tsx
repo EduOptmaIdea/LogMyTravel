@@ -38,7 +38,7 @@ function formatDateForDisplay(dateStr: string): string {
 }
 
 export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
-  const { updateTrip } = useTrips();
+  const { updateTrip, reopenTrip } = useTrips();
 
   const now = getBrasiliaDateTime();
 
@@ -176,6 +176,17 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
 
           <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
+            <Button
+              onClick={async () => {
+                try {
+                  await reopenTrip(trip.id);
+                } catch {}
+                onClose();
+              }}
+              className="flex-1 bg-yellow-500 hover:bg-yellow-600"
+            >
+              Cancelar encerramento
+            </Button>
             <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700">Salvar</Button>
           </div>
         </div>

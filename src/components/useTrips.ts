@@ -281,6 +281,7 @@ export function useTrips() {
     if (supabase && online) {
       const { data, error } = await supabase.from("trips").update(payload).eq("id", id).select().single();
       if (error) throw error;
+      setTrips((prev) => prev.map((t) => t.id === id ? { ...t, ...updates } : t));
       return data as Trip;
     }
     setTrips((prev) => prev.map((t) => t.id === id ? { ...t, ...updates } : t));
@@ -288,6 +289,18 @@ export function useTrips() {
     const updated = trips.find((t) => t.id === id);
     if (updated) saveCaches(trips.map((t) => t.id === id ? { ...t, ...updates } : t), vehicles);
     return { ...(updated || { id } as any), ...(updates || {}) } as Trip;
+  };
+
+  const reopenTrip = async (id: string): Promise<Trip> => {
+    const updates: Partial<Trip> = {
+      status: "ongoing",
+      arrivalLocation: undefined,
+      arrivalCoords: null,
+      arrivalDate: undefined,
+      arrivalTime: undefined,
+      details: undefined,
+    };
+    return updateTrip(id, updates);
   };
 
   const deleteTrip = async (id: string) => {
@@ -373,6 +386,7 @@ export function useTrips() {
       enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: [] } });
     },
     ensureVehicleSynced: async () => true,
+    reopenTrip,
     getTripVehicleSegments: async (tripId: string): Promise<Segment[]> => {
       try {
         if (!supabase || !tripId) return [];
