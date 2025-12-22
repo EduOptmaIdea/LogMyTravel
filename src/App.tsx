@@ -92,7 +92,12 @@ export default function App() {
   const [tripToEdit, setTripToEdit] = useState<Trip | null>(
     null,
   );
-  const [showSplash, setShowSplash] = useState(() => !isRecoveryRoute);
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      const seen = typeof window !== 'undefined' ? localStorage.getItem('splash_seen') === '1' : false;
+      return !isRecoveryRoute && !seen;
+    } catch { return !isRecoveryRoute; }
+  });
   const [isRecoveryFlow, setIsRecoveryFlow] = useState<boolean>(() => isRecoveryRoute);
   const [searchTerm, setSearchTerm] = useState(""); // Filtro por nome
   const [filterStatus, setFilterStatus] = useState<
@@ -420,6 +425,7 @@ export default function App() {
   };
 
   const handleSplashComplete = () => {
+    try { if (typeof window !== 'undefined') localStorage.setItem('splash_seen', '1'); } catch {}
     setShowSplash(false);
   };
 

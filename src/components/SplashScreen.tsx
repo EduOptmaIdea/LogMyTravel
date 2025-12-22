@@ -15,14 +15,9 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
   const [showBackground, setShowBackground] = useState(false);
 
   useEffect(() => {
-    // Mostra o fundo após 300ms
-    const timer1 = setTimeout(() => setShowBackground(true), 300);
-    
-    // Mostra o ícone após 800ms
-    const timer2 = setTimeout(() => setShowLogo(true), 800);
-    
-    // Finaliza splash após 2s
-    const timer3 = setTimeout(onReady, 3000);
+    const timer1 = setTimeout(() => setShowBackground(true), 150);
+    const timer2 = setTimeout(() => setShowLogo(true), 400);
+    const timer3 = setTimeout(onReady, 1200);
 
     return () => {
       clearTimeout(timer1);
@@ -37,7 +32,7 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: showBackground ? 1 : 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         className="absolute inset-0"
       >
         <img
@@ -54,7 +49,7 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
           scale: showLogo ? 1 : 0.8,
           opacity: showLogo ? 1 : 0 
         }}
-        transition={{ duration: 0.6, ease: "easeOut", delay: 0.5 }}
+        transition={{ duration: 0.4, ease: "easeOut", delay: 0.25 }}
         className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
       >
         <div className="bg-white rounded-xl p-8 shadow-2xl">
