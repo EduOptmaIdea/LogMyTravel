@@ -113,6 +113,7 @@ export interface TripVehicleSegment {
 // Cliente Supabase
 import { supabase, SUPABASE_CONFIGURED } from "../utils/supabase/client";
 import { safeRandomUUID } from "../utils/uuid";
+import { serverPath } from "../utils/server";
 
 const getSupabase = () => {
   return supabase; // Já é null se não configurado
@@ -627,18 +628,38 @@ export function useTrips() {
       saveCache("vehicles_cache", updatedVehicles);
       saveToLocalStorage("vehicles", updatedVehicles);
 
-      // Dispara insert no servidor em segundo plano
+      // Persistência na nuvem: tentar direto no Supabase; se falhar, usar função server (service role)
       if (supabase && user?.id) {
-        (async () => {
-          try {
-            const res = await supabase.from("vehicles").insert([vehicleData]);
-            if (res.error) {
-              console.warn("Falha ao inserir veículo na nuvem:", res.error.message || res.error);
+        try {
+          const res = await supabase.from("vehicles").insert([vehicleData]);
+          if (res.error) {
+            console.warn("Falha Supabase vehicles.insert:", res.error.message || res.error);
+            const fnRes = await fetch(serverPath("vehicles-save"), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ vehicle: vehicleData }),
+            });
+            const json = await fnRes.json().catch(() => ({ ok: false }));
+            if (!json?.ok) {
+              console.warn("Falha server vehicles-save:", json?.error || "unknown");
             }
-          } catch (err: any) {
-            console.warn("Exceção ao inserir veículo na nuvem:", err?.message || err);
           }
-        })();
+        } catch (err: any) {
+          console.warn("Exceção Supabase vehicles.insert:", err?.message || err);
+          try {
+            const fnRes = await fetch(serverPath("vehicles-save"), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ vehicle: vehicleData }),
+            });
+            const json = await fnRes.json().catch(() => ({ ok: false }));
+            if (!json?.ok) {
+              console.warn("Falha server vehicles-save:", json?.error || "unknown");
+            }
+          } catch (e: any) {
+            console.warn("Exceção vehicles-save:", e?.message || e);
+          }
+        }
       }
 
       return savedVehicle;
