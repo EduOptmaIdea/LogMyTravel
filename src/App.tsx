@@ -45,6 +45,7 @@ export default function App() {
     linkVehicleToTrip,
     unlinkVehicleFromTrip,
     unlinkAllVehiclesFromTrip,
+    ensureVehicleSynced,
   } = useTripsHook();
 
   // Sempre renderizar trips do hook (usa localStorage quando não autenticado)
@@ -666,6 +667,7 @@ export default function App() {
               saveVehicle={saveVehicle}
               updateVehicle={updateVehicle}
               deleteVehicle={deleteVehicle}
+              ensureVehicleSynced={ensureVehicleSynced}
             />
           )}
         </div>

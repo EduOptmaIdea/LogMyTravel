@@ -15,7 +15,7 @@ export const handler = async (event: any) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceKey)
-    const { error } = await supabase.from('vehicles').insert([vehicle])
+    const { error } = await supabase.from('vehicles').upsert([vehicle], { onConflict: 'id' })
     if (error) {
       return { statusCode: 500, body: JSON.stringify({ ok: false, error: error.message }) }
     }
@@ -24,4 +24,3 @@ export const handler = async (event: any) => {
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: e?.message || 'Internal error' }) }
   }
 }
-

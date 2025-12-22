@@ -13,9 +13,10 @@ type VehiclesViewProps = {
   saveVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<Vehicle>;
   updateVehicle: (id: string, updates: Partial<Vehicle>) => Promise<Vehicle>;
   deleteVehicle: (id: string) => Promise<void>;
+  ensureVehicleSynced?: (id: string) => Promise<boolean>;
 };
 
-export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, updateVehicle, deleteVehicle }: VehiclesViewProps) {
+export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, updateVehicle, deleteVehicle, ensureVehicleSynced }: VehiclesViewProps) {
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -275,6 +276,30 @@ export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, up
                 <div>
                   <div className="font-semibold text-[#192A56]">{v.nickname || v.make || v.licensePlate}</div>
                   <div className="text-xs text-gray-600">{v.model || "—"}</div>
+                  {v.syncStatus && (
+                    <div className="mt-1">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                        v.syncStatus === 'synced' ? 'bg-green-100 text-green-700' :
+                        v.syncStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {v.syncStatus === 'synced' ? 'Sincronizado' : v.syncStatus === 'pending' ? 'Pendente' : 'Erro'}
+                      </span>
+                      {v.syncStatus !== 'synced' && ensureVehicleSynced && (
+                        <button
+                          type="button"
+                          className="ml-2 text-[10px] underline text-teal-700"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const ok = await ensureVehicleSynced(v.id);
+                            openModal({ title: ok ? "Sincronizado" : "Falha", message: ok ? "Veículo sincronizado na nuvem." : "Não foi possível sincronizar.", cancelText: "Fechar" });
+                          }}
+                        >
+                          Re-sincronizar
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <ChevronRight size={18} className="text-gray-400" />

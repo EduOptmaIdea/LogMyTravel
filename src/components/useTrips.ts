@@ -60,6 +60,7 @@ export interface Vehicle {
   active?: boolean;
   created_at?: string;
   updated_at?: string;
+  syncStatus?: "pending" | "synced" | "error";
 }
 
 export interface Stop {
@@ -155,6 +156,12 @@ const loadFromLocalStorage = (key: string): any[] => {
     return [];
   }
 };
+const loadSyncMap = (key: string): Record<string, "pending" | "synced" | "error"> => {
+  try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : {}; } catch { return {}; }
+};
+const saveSyncMap = (key: string, map: Record<string, "pending" | "synced" | "error">) => {
+  try { localStorage.setItem(key, JSON.stringify(map)); } catch {}
+};
 
 const saveCache = (key: string, data: any[]) => {
   try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
@@ -180,10 +187,12 @@ export function useTrips() {
         const cacheTrips = loadCache("trips_cache");
         const initialTrips = (localTrips && localTrips.length > 0 ? localTrips : cacheTrips) || [];
         if (initialTrips.length > 0) setTrips(initialTrips);
-        const localVehicles = loadFromLocalStorage("vehicles");
+        const localVehiclesBase = loadFromLocalStorage("vehicles");
         const cacheVehicles = loadCache("vehicles_cache");
-        const initialVehicles = (localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || [];
-        if (initialVehicles.length > 0) setVehicles(initialVehicles);
+        const syncMap = loadSyncMap("vehicles_sync");
+        const initialVehicles = (localVehiclesBase && localVehiclesBase.length > 0 ? localVehiclesBase : cacheVehicles) || [];
+        const mergedInitialVehicles = initialVehicles.map((v: any) => ({ ...v, syncStatus: syncMap[v.id] ?? "pending" }));
+        if (mergedInitialVehicles.length > 0) setVehicles(mergedInitialVehicles);
       } catch {}
       const supabase = getSupabase();
       if (!supabase) {
@@ -350,12 +359,18 @@ export function useTrips() {
           active: (typeof v.active === 'boolean') ? v.active : true,
           created_at: v.created_at,
           updated_at: v.updated_at,
+          syncStatus: "synced",
         }));
+        const mapSynced: Record<string, "pending" | "synced" | "error"> = {};
+        vehicles.forEach(v => { mapSynced[v.id] = "synced"; });
+        saveSyncMap("vehicles_sync", { ...loadSyncMap("vehicles_sync"), ...mapSynced });
 
         if (!vehicles || vehicles.length === 0) {
           const localVehicles = loadFromLocalStorage("vehicles");
           const cacheVehicles = loadCache("vehicles_cache");
-          setVehicles((localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || []);
+          const syncMap = loadSyncMap("vehicles_sync");
+          const merged = ((localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || []).map((v: any) => ({ ...v, syncStatus: syncMap[v.id] ?? "pending" }));
+          setVehicles(merged);
         } else {
           setVehicles(vehicles);
           saveCache("vehicles_cache", vehicles);
@@ -367,7 +382,9 @@ export function useTrips() {
         setTrips((local && local.length > 0 ? local : cacheTrips) || []);
         const localVehicles = loadFromLocalStorage("vehicles");
         const cacheVehicles = loadCache("vehicles_cache");
-        setVehicles((localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || []);
+        const syncMap = loadSyncMap("vehicles_sync");
+        const merged = ((localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || []).map((v: any) => ({ ...v, syncStatus: syncMap[v.id] ?? "pending" }));
+        setVehicles(merged);
         setError(
           "Falha ao carregar dados da nuvem. Usando dados locais.",
         );
@@ -624,11 +641,13 @@ export function useTrips() {
         active: (typeof newVehicle.active === 'boolean') ? newVehicle.active : true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        syncStatus: "pending",
       };
       const updatedVehicles = [savedVehicle, ...vehicles];
       setVehicles(updatedVehicles);
       saveCache("vehicles_cache", updatedVehicles);
       saveToLocalStorage("vehicles", updatedVehicles);
+      const syncMap1 = loadSyncMap("vehicles_sync"); syncMap1[savedVehicle.id] = "pending"; saveSyncMap("vehicles_sync", syncMap1);
 
       // Persistência na nuvem: tentar direto no Supabase; se falhar, usar função server (service role)
       if (supabase && user?.id) {
@@ -644,6 +663,10 @@ export function useTrips() {
             const json = await fnRes.json().catch(() => ({ ok: false }));
             if (!json?.ok) {
               console.warn("Falha server vehicles-save:", json?.error || "unknown");
+              const syncMapE = loadSyncMap("vehicles_sync"); syncMapE[savedVehicle.id] = "error"; saveSyncMap("vehicles_sync", syncMapE);
+            } else {
+              const syncMapOk = loadSyncMap("vehicles_sync"); syncMapOk[savedVehicle.id] = "synced"; saveSyncMap("vehicles_sync", syncMapOk);
+              setVehicles(prev => prev.map(v => v.id === savedVehicle.id ? { ...v, syncStatus: "synced" } : v));
             }
           }
         } catch (err: any) {
@@ -657,13 +680,17 @@ export function useTrips() {
             const json = await fnRes.json().catch(() => ({ ok: false }));
             if (!json?.ok) {
               console.warn("Falha server vehicles-save:", json?.error || "unknown");
+              const syncMapE2 = loadSyncMap("vehicles_sync"); syncMapE2[savedVehicle.id] = "error"; saveSyncMap("vehicles_sync", syncMapE2);
+            } else {
+              const syncMapOk2 = loadSyncMap("vehicles_sync"); syncMapOk2[savedVehicle.id] = "synced"; saveSyncMap("vehicles_sync", syncMapOk2);
+              setVehicles(prev => prev.map(v => v.id === savedVehicle.id ? { ...v, syncStatus: "synced" } : v));
             }
           } catch (e: any) {
             console.warn("Exceção vehicles-save:", e?.message || e);
+            const syncMapE3 = loadSyncMap("vehicles_sync"); syncMapE3[savedVehicle.id] = "error"; saveSyncMap("vehicles_sync", syncMapE3);
           }
         }
       }
-
       return savedVehicle;
     } catch (err: any) {
       // Ainda assim, mantemos o otimista acima; aqui só reportamos no console
@@ -756,6 +783,7 @@ export function useTrips() {
       setVehicles(updatedVehicles);
       saveCache("vehicles_cache", updatedVehicles);
       saveToLocalStorage("vehicles", updatedVehicles);
+      const syncMapU = loadSyncMap("vehicles_sync"); syncMapU[id] = "synced"; saveSyncMap("vehicles_sync", syncMapU);
       return updatedVehicle;
     } catch (err: any) {
       console.error("Erro ao atualizar veículo no Supabase:", err);
@@ -812,6 +840,7 @@ export function useTrips() {
       setVehicles(updated);
       saveCache("vehicles_cache", updated);
       saveToLocalStorage("vehicles", updated);
+      const syncMapD = loadSyncMap("vehicles_sync"); delete syncMapD[id]; saveSyncMap("vehicles_sync", syncMapD);
     } catch (err: any) {
       console.error("Erro ao deletar veículo no Supabase:", err);
       throw new Error("Falha ao deletar veículo na nuvem.");
@@ -1964,5 +1993,50 @@ export function useTrips() {
     linkVehicleToTrip,
     unlinkVehicleFromTrip,
     unlinkAllVehiclesFromTrip,
+    ensureVehicleSynced: async (id: string): Promise<boolean> => {
+      try {
+        const v = vehicles.find(vv => vv.id === id);
+        if (!v) return false;
+        const supa = getSupabase();
+        const row: any = {
+          id: v.id,
+          user_id: user?.id ?? null,
+          nickname: v.nickname,
+          category: v.category,
+          make: v.make,
+          model: v.model,
+          color: v.color,
+          year: v.year,
+          license_plate: v.licensePlate,
+          vehicle_type: v.vehicleType,
+          km_initial: v.kmInitial,
+          fuels: v.fuels,
+          photo_url: v.photoUrl ?? null,
+          photo_path: v.photoPath ?? null,
+          active: v.active ?? true,
+        };
+        let ok = false;
+        if (supa && user?.id) {
+          try {
+            const r = await supa.from("vehicles").upsert([row], { onConflict: "id" });
+            if (!r.error) ok = true;
+          } catch {}
+        }
+        if (!ok) {
+          try {
+            const fnRes = await fetch(vehiclesSaveFn(), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ vehicle: row }),
+            });
+            const json = await fnRes.json().catch(() => ({ ok: false }));
+            ok = !!json?.ok;
+          } catch {}
+        }
+        const syncMap = loadSyncMap("vehicles_sync"); syncMap[id] = ok ? "synced" : "error"; saveSyncMap("vehicles_sync", syncMap);
+        setVehicles(prev => prev.map(vv => vv.id === id ? { ...vv, syncStatus: ok ? "synced" : "error" } : vv));
+        return ok;
+      } catch { return false; }
+    },
   };
 }
