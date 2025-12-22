@@ -377,7 +377,7 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
       )}
       {/* Barra de ações inferior da página */}
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex gap-3">
+        <div className="flex gap-3 mr-2">
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
@@ -406,7 +406,7 @@ export default function VehicleDetailsModal({ vehicle, onClose, onUpdate, onDele
             </>
           )}
         </div>
-        <div>
+        <div className="ml-2">
           {isEditing ? (
             <button
               disabled
