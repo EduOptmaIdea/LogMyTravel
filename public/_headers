@@ -3,12 +3,14 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
 
-/assets/*
-  Cache-Control: public, max-age=300, must-revalidate
+/index.html
+  Cache-Control: no-store, must-revalidate
 
 /*.js
-  Cache-Control: public, max-age=300, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
 
 /*.css
-  Cache-Control: public, max-age=300, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
 
+/assets/*
+  Cache-Control: public, max-age=600, must-revalidate
