@@ -88,8 +88,14 @@ export function MenuView({ vehicles, onViewChange }: MenuViewProps) {
         </button>
         <button
           onClick={async () => {
-            await signOut();
-            onViewChange("login");
+            try {
+              await signOut();
+            } catch (error) {
+              console.error("Erro logout menu:", error);
+            } finally {
+              localStorage.clear();
+              window.location.reload(); // Isso vai forçar o app a reiniciar na tela de Login
+            }
           }}
           className="w-full flex items-center gap-3 p-4 hover:bg-gray-50"
         >

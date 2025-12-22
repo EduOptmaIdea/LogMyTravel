@@ -106,13 +106,20 @@ export default function App() {
             </>
           )}
           {activeView === "ongoing-trip" && (
-            <OngoingTripView 
-              trips={ongoingTrips} vehicles={vehicles} 
+            <OngoingTripView
+              trips={ongoingTrips}
+              vehicles={vehicles}
               onUpdateKm={(id, km) => updateTrip(id, { endKm: km })}
               onUpdateStartKm={(id, km) => updateTrip(id, { startKm: km })}
               onAttachVehicleToTrip={linkVehicleToTrip}
               onDetachVehicleFromTrip={unlinkVehicleFromTrip}
               onRemoveVehicleFromTrip={unlinkAllVehiclesFromTrip}
+              onEdit={(trip) => {
+                setTripToEdit(trip);
+                setIsEditModalOpen(true);
+              }}
+              onDelete={(id) => deleteTrip(id)}
+              onComplete={(id) => updateTrip(id, { status: 'completed' })}
             />
           )}
           {activeView === "my-trips" && (
@@ -122,7 +129,16 @@ export default function App() {
              </div>
           )}
           {activeView === "menu" && <MenuView vehicles={vehicles} onViewChange={setActiveView} />}
-          {activeView === "vehicles" && <VehiclesView vehicles={vehicles} saveVehicle={saveVehicle} updateVehicle={updateVehicle} deleteVehicle={deleteVehicle} ensureVehicleSynced={ensureVehicleSynced} />}
+          {activeView === "vehicles" && (
+            <VehiclesView
+              vehicles={vehicles}
+              trips={trips}
+              saveVehicle={saveVehicle}
+              updateVehicle={updateVehicle}
+              deleteVehicle={deleteVehicle}
+              ensureVehicleSynced={ensureVehicleSynced}
+            />
+          )}
         </div>
       </main>
 
