@@ -153,6 +153,13 @@ const loadFromLocalStorage = (key: string): any[] => {
   }
 };
 
+const saveCache = (key: string, data: any[]) => {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+};
+const loadCache = (key: string): any[] => {
+  try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : []; } catch { return []; }
+};
+
 export function useTrips() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -279,11 +286,12 @@ export function useTrips() {
         // Se nenhum dado veio da nuvem, usar cache/localStorage
         if (!tripsWithStops || tripsWithStops.length === 0) {
           const local = loadFromLocalStorage("trips");
-          setTrips(local || []);
+          const cacheTrips = loadCache("trips_cache");
+          const nextTrips = (local && local.length > 0 ? local : cacheTrips) || [];
+          setTrips(nextTrips);
         } else {
           setTrips(tripsWithStops);
-          // Cachear última leitura bem sucedida da nuvem
-          saveToLocalStorage("trips_cache", tripsWithStops);
+          saveCache("trips_cache", tripsWithStops);
         }
 
         // Carregar veículos e converter snake_case para camelCase
@@ -330,14 +338,22 @@ export function useTrips() {
           updated_at: v.updated_at,
         }));
 
-        // Exibir veículos; se vazio, manter lista vazia
-        setVehicles(vehicles || []);
+        if (!vehicles || vehicles.length === 0) {
+          const localVehicles = loadFromLocalStorage("vehicles");
+          const cacheVehicles = loadCache("vehicles_cache");
+          setVehicles((localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || []);
+        } else {
+          setVehicles(vehicles);
+          saveCache("vehicles_cache", vehicles);
+        }
       } catch (err: any) {
         console.error("Erro ao carregar do Supabase:", err);
         const local = loadFromLocalStorage("trips");
-        const cache = loadFromLocalStorage("trips_cache");
-        setTrips((local && local.length > 0 ? local : cache) || []);
-        setVehicles([]);
+        const cacheTrips = loadCache("trips_cache");
+        setTrips((local && local.length > 0 ? local : cacheTrips) || []);
+        const localVehicles = loadFromLocalStorage("vehicles");
+        const cacheVehicles = loadCache("vehicles_cache");
+        setVehicles((localVehicles && localVehicles.length > 0 ? localVehicles : cacheVehicles) || []);
         setError(
           "Falha ao carregar dados da nuvem. Usando dados locais.",
         );
@@ -433,7 +449,8 @@ export function useTrips() {
 
       const updatedTrips = [savedTrip, ...trips];
       setTrips(updatedTrips);
-      // Não escrever em localStorage após sucesso no Supabase para evitar redundância
+      saveCache("trips_cache", updatedTrips);
+      saveToLocalStorage("trips", updatedTrips);
       return savedTrip;
     } catch (err: any) {
       console.error("Erro ao salvar viagem no Supabase:", err);
@@ -512,6 +529,8 @@ export function useTrips() {
         t.id === id ? updatedTrip : t,
       );
       setTrips(updatedTrips);
+      saveCache("trips_cache", updatedTrips);
+      saveToLocalStorage("trips", updatedTrips);
       return updatedTrip;
     } catch (err: any) {
       console.error(
@@ -537,6 +556,8 @@ export function useTrips() {
 
       const updatedTrips = trips.filter((t) => t.id !== id);
       setTrips(updatedTrips);
+      saveCache("trips_cache", updatedTrips);
+      saveToLocalStorage("trips", updatedTrips);
     } catch (err: any) {
       console.error("Erro ao deletar viagem no Supabase:", err);
       throw new Error("Falha ao deletar viagem na nuvem.");
@@ -601,6 +622,8 @@ export function useTrips() {
 
       const updatedVehicles = [savedVehicle, ...vehicles];
       setVehicles(updatedVehicles);
+      saveCache("vehicles_cache", updatedVehicles);
+      saveToLocalStorage("vehicles", updatedVehicles);
       return savedVehicle;
     } catch (err: any) {
       console.error("Erro ao salvar veículo no Supabase:", err);
@@ -673,6 +696,8 @@ export function useTrips() {
         v.id === id ? updatedVehicle : v,
       );
       setVehicles(updatedVehicles);
+      saveCache("vehicles_cache", updatedVehicles);
+      saveToLocalStorage("vehicles", updatedVehicles);
       return updatedVehicle;
     } catch (err: any) {
       console.error("Erro ao atualizar veículo no Supabase:", err);
@@ -727,6 +752,8 @@ export function useTrips() {
 
       const updated = vehicles.filter((v) => v.id !== id);
       setVehicles(updated);
+      saveCache("vehicles_cache", updated);
+      saveToLocalStorage("vehicles", updated);
     } catch (err: any) {
       console.error("Erro ao deletar veículo no Supabase:", err);
       throw new Error("Falha ao deletar veículo na nuvem.");
