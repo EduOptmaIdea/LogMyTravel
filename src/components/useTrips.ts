@@ -629,17 +629,16 @@ export function useTrips() {
 
       // Dispara insert no servidor em segundo plano
       if (supabase && user?.id) {
-        supabase
-          .from("vehicles")
-          .insert([vehicleData])
-          .then((res) => {
+        (async () => {
+          try {
+            const res = await supabase.from("vehicles").insert([vehicleData]);
             if (res.error) {
               console.warn("Falha ao inserir veículo na nuvem:", res.error.message || res.error);
             }
-          })
-          .catch((e) => {
-            console.warn("Exceção ao inserir veículo na nuvem:", e);
-          });
+          } catch (err: any) {
+            console.warn("Exceção ao inserir veículo na nuvem:", err?.message || err);
+          }
+        })();
       }
 
       return savedVehicle;
