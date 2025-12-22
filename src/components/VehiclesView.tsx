@@ -1,4 +1,5 @@
 1→import { useState, useEffect } from "react";
+import React from "react";
 import { PlusCircle, ChevronRight } from "lucide-react";
 import VehicleDetailsModal from "./VehicleDetailsModal";
 import VehiclesOnTrip from "./VehiclesOnTrip";
@@ -40,7 +41,7 @@ export function VehiclesView({ vehicles, trips, loadingVehicles, saveVehicle, up
   const { openModal, element: warningsModal } = useWarningsModal();
   const [signedMap, setSignedMap] = useState<Record<string, string>>({});
 
-  useEffect(() => {
+  React.useEffect(() => {
     (async () => {
       try {
         if (!supabase) return;
