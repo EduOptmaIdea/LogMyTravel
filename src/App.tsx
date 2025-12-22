@@ -499,7 +499,7 @@ export default function App() {
         className={`flex-1 overflow-y-auto scroll-smooth`}
       >
 
-        <div className="max-w-md mx-auto pt-[72px] pt-2 pb-28"> 
+        <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto px-4 md:px-6 pt-[72px] pb-24 lg:pb-28"> 
 
           {activeView === "new-trip" && <PromoCarousel />}
           {activeView === "new-trip" && (

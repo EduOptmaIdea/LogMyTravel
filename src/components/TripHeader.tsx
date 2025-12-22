@@ -11,8 +11,8 @@ export function TripHeader({ onOpenLogin }: { onOpenLogin?: () => void }) {
 
   return (
     <>
-      <header className="bg-[#192A56] text-white px-4 py-3 fixed top-0 left-0 right-0 w-full z-40 shadow-md">
-      <div className="flex items-center gap-3 max-w-md mx-auto">
+      <header className="bg-[#192A56] text-white px-4 md:px-6 py-3 fixed top-0 left-0 right-0 w-full z-40 shadow-md">
+      <div className="flex items-center gap-3 max-w-lg md:max-w-xl lg:max-w-2xl mx-auto">
         <div className="flex items-center gap-3 flex-1">
           <img src={logo} alt="LogMyTravel" className="h-10 w-auto rounded-md" />
           <div>
