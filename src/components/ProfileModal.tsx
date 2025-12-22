@@ -247,6 +247,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <label className="block text-xs text-gray-500">Confirme sua senha para excluir permanentemente</label>
             <input
               type="password"
+              name="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Senha"
