@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       if (supabase) {
-        await supabase.auth.signOut();
+        try { await supabase.auth.signOut({ scope: 'global' } as any); } catch { await supabase.auth.signOut(); }
       }
     } catch (e) {
       // Em caso de erro na chamada HTTP, limpamos o estado local
@@ -123,7 +123,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {}
       try { if (typeof window !== 'undefined') { window.location.hash = ''; } } catch {}
-      try { if (typeof window !== 'undefined') { window.location.replace('/'); } } catch {}
+      try {
+        if (typeof window !== 'undefined') {
+          window.location.replace('/');
+          setTimeout(() => { try { window.location.reload(); } catch {} }, 50);
+        }
+      } catch {}
     }
   };
 

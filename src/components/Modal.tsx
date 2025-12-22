@@ -46,7 +46,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             ✕
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-4 max-h-[80vh] overflow-y-auto">{children}</div>
       </div>
     </div>,
     document.body,
