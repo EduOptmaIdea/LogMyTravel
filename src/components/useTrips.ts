@@ -13,7 +13,7 @@ export interface Trip {
   departureCoords?: { latitude: number; longitude: number } | null;
   startKm?: number | null;
   endKm?: number | null;
-  status: "ongoing" | "completed";
+  status: boolean;
   hasVehicle?: boolean;
   vehicleIds?: string[];
   arrivalLocation?: string;
@@ -51,6 +51,8 @@ export interface Segment {
   segmentDate?: string | null;
   created_at?: string | null;
 }
+
+export type TripVehicleSegment = Segment;
 
 export function useTrips() {
   const { user } = useAuth();
@@ -125,7 +127,7 @@ export function useTrips() {
           departureCoords: row.departure_coords ?? null,
           startKm: row.start_km,
           endKm: row.end_km,
-          status: row.status,
+          status: typeof row.status === 'boolean' ? row.status : row.status === 'completed',
           hasVehicle: row.has_vehicle,
           vehicleIds: row.vehicle_ids,
           arrivalLocation: row.arrival_location ?? undefined,
@@ -276,7 +278,7 @@ export function useTrips() {
     departureCoords: row.departure_coords ?? null,
     startKm: row.start_km,
     endKm: row.end_km,
-    status: row.status,
+    status: typeof row.status === 'boolean' ? row.status : row.status === 'completed',
     hasVehicle: row.has_vehicle,
     vehicleIds: row.vehicle_ids,
     arrivalLocation: row.arrival_location ?? undefined,
@@ -344,7 +346,7 @@ export function useTrips() {
 
   const reopenTrip = async (id: string): Promise<Trip> => {
     const updates: Partial<Trip> = {
-      status: "ongoing",
+      status: false,
       arrivalLocation: "",
       arrivalCoords: null,
       arrivalDate: "",
@@ -366,10 +368,110 @@ export function useTrips() {
     saveCaches(trips.filter((t) => t.id !== id), vehicles);
   };
 
+  const deleteTripCascade = async (id: string) => {
+    if (supabase && online) {
+      await supabase.from("stops").delete().eq("trip_id", id);
+      await supabase.from("trip_vehicles").delete().eq("trip_id", id);
+      await supabase.from("trip_vehicle_segments").delete().eq("trip_id", id);
+      await supabase.from("trips").delete().eq("id", id);
+    }
+    setTrips((prev) => prev.filter((t) => t.id !== id));
+    saveCaches(trips.filter((t) => t.id !== id), vehicles);
+  };
+
+  const saveStop = async (stop: any): Promise<any> => {
+    const toSnake = (obj: Record<string, any>) => {
+      const map: Record<string, string> = {
+        tripId: "trip_id",
+        name: "name",
+        stopType: "stop_type",
+        wasDriving: "was_driving",
+        location: "location",
+        placeDetail: "place_detail",
+        arrivalKm: "arrival_km",
+        departureKm: "departure_km",
+        arrivalDate: "arrival_date",
+        arrivalTime: "arrival_time",
+        departureDate: "departure_date",
+        departureTime: "departure_time",
+        reasons: "reasons",
+        otherReason: "other_reason",
+        cost: "cost",
+        costDetails: "cost_details",
+        notes: "notes",
+        photoUrls: "photo_urls",
+        tankFull: "tank_full",
+      };
+      const out: Record<string, any> = {};
+      Object.keys(obj).forEach((k) => {
+        const nk = map[k] || k;
+        out[nk] = obj[k];
+      });
+      return out;
+    };
+    if (supabase && online) {
+      const payload = { ...toSnake(stop), user_id: user?.id };
+      const { data, error } = await supabase.from("stops").insert([payload]).select().single();
+      if (error) throw error;
+      return data;
+    }
+    // offline: append to trip in memory
+    setTrips((prev) => prev.map((t) => t.id === stop.tripId ? { ...t, stops: [...(t.stops || []), { id: `local-${safeRandomUUID()}`, ...stop }] } : t));
+    enqueue({ kind: "trip_update", id: stop.tripId, payload: { stops: [] } }); // marker for sync
+    return stop;
+  };
+
+  const updateStop = async (id: string, updates: Record<string, any>): Promise<any> => {
+    const toSnake = (obj: Record<string, any>) => {
+      const map: Record<string, string> = {
+        name: "name",
+        stopType: "stop_type",
+        wasDriving: "was_driving",
+        location: "location",
+        placeDetail: "place_detail",
+        arrivalKm: "arrival_km",
+        departureKm: "departure_km",
+        arrivalDate: "arrival_date",
+        arrivalTime: "arrival_time",
+        departureDate: "departure_date",
+        departureTime: "departure_time",
+        reasons: "reasons",
+        otherReason: "other_reason",
+        cost: "cost",
+        costDetails: "cost_details",
+        notes: "notes",
+        photoUrls: "photo_urls",
+        tankFull: "tank_full",
+      };
+      const out: Record<string, any> = {};
+      Object.keys(obj).forEach((k) => {
+        const nk = map[k] || k;
+        out[nk] = obj[k];
+      });
+      return out;
+    };
+    if (supabase && online) {
+      const payload = toSnake(updates);
+      const { data, error } = await supabase.from("stops").update(payload).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    }
+    // offline noop for now
+    return { id, ...updates };
+  };
+
+  const deleteStop = async (id: string): Promise<void> => {
+    if (supabase && online) {
+      await supabase.from("stops").delete().eq("id", id);
+      return;
+    }
+  };
+
   return {
     trips, vehicles, loading, syncing, syncBackground,
     refresh: fetchData,
-    saveTrip, updateTrip, deleteTrip,
+    saveTrip, updateTrip, deleteTrip, deleteTripCascade,
+    saveStop, updateStop, deleteStop,
     saveVehicle: async (v: Omit<Vehicle, "id">): Promise<Vehicle> => {
       if (supabase && online) {
         const { data, error } = await supabase

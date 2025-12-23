@@ -45,9 +45,11 @@ export default function App() {
     ensureVehicleSynced,
     syncing,
     syncBackground,
+    refresh,
+    deleteTripCascade,
   } = useTripsHook();
 
-  const ongoingTrips = trips.filter((trip) => trip.status === "ongoing");
+  const ongoingTrips = trips.filter((trip) => !trip.status);
   const hasOngoingTrip = ongoingTrips.length > 0;
 
   const [activeView, setActiveView] = useState<any>("new-trip");
@@ -96,6 +98,22 @@ export default function App() {
     }
   };
 
+  const handleDeleteTripCascade = async (trip: Trip) => {
+    if (!trip.status) return; // apenas viagens encerradas
+    const pwd = window.prompt('Digite sua senha para confirmar a exclusão permanente:') || '';
+    if (!pwd || !user?.email) return;
+    try {
+      if (supabase) {
+        const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email!, password: pwd });
+        if (authError) { toast.error("Senha incorreta."); return; }
+      }
+      await deleteTripCascade(trip.id);
+      setActiveView("new-trip");
+      toast.success("Viagem excluída.");
+    } catch {
+      toast.error("Falha ao excluir viagem.");
+    }
+  };
   const scrollToTop = () => {
     mainContentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -150,13 +168,13 @@ export default function App() {
                 setIsEditModalOpen(true);
               }}
               onDelete={(id) => { deleteTrip(id); if (selectedOngoingTripId === id) { setSelectedOngoingTripId(null); } }}
-              onComplete={(id) => updateTrip(id, { status: 'completed' })}
+              onComplete={(id) => updateTrip(id, { status: true })}
             />
           )}
           {activeView === "my-trips" && (
              <div className="space-y-4">
                <h2 className="text-xl font-bold p-4">Minhas viagens</h2>
-               {trips.map(t => <TripCard key={t.id} trip={t} onEdit={() => {setTripToEdit(t); setIsEditModalOpen(true);}} />)}
+               {trips.map(t => <TripCard key={t.id} trip={t} onEdit={() => {setTripToEdit(t); setIsEditModalOpen(true);}} onDelete={t.status ? () => handleDeleteTripCascade(t) : undefined} />)}
              </div>
           )}
           {activeView === "menu" && <MenuView vehicles={vehicles} onViewChange={setActiveView} />}
@@ -177,7 +195,7 @@ export default function App() {
       {isEditModalOpen && tripToEdit && (
         <TripEditModal
           trip={tripToEdit}
-          onSave={async (data) => { await updateTrip(tripToEdit.id, data); }}
+          onSave={async (data) => { await updateTrip(tripToEdit.id, data); await refresh(); }}
           onClose={() => setIsEditModalOpen(false)}
         />
       )}

@@ -94,7 +94,7 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
 
     try {
       await updateTrip(trip.id, {
-        status: "completed",
+        status: true,
         arrivalLocation: finalArrivalLocation,
         arrivalCoords: finalArrivalCoords,
         arrivalDate: formattedArrivalDate,

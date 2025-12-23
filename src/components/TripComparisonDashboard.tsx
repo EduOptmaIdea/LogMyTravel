@@ -22,7 +22,7 @@ const parseDateTime = (dateStr: string, timeStr: string): Date | null => {
 const getDurationMs = (trip: Trip): number => {
     const startDate = parseDateTime(trip.departureDate, trip.departureTime);
     if (!startDate) return 0;
-    let endDate: Date | null = (trip.status === "completed" && trip.arrivalDate && trip.arrivalTime)
+    let endDate: Date | null = (trip.status && trip.arrivalDate && trip.arrivalTime)
         ? parseDateTime(trip.arrivalDate, trip.arrivalTime)
         : new Date();
     if (!endDate) return 0;
@@ -190,8 +190,8 @@ export function TripComparisonDashboard({
         return trips.reduce((sum, trip) => sum + getMetricValue(trip, metric, totalsByTrip), 0);
     };
 
-    const getStatusLabel = (status: "ongoing" | "completed"): string => {
-        return status === "ongoing" ? "Em andamento" : "Encerrada";
+    const getStatusLabel = (status: boolean): string => {
+        return status ? "Encerrada" : "Em andamento";
     };
     
     const getSlotColors = (slotIndex: 1 | 2 | 3 | 4) => {
@@ -387,7 +387,7 @@ export function TripComparisonDashboard({
 
                             {/* Status e Ranqueamento Dinâmico */}
                             <div className="mt-4 flex flex-col items-start gap-1">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${trip1.status === "ongoing" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${!trip1.status ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
                                     {getStatusLabel(trip1.status)}
                                 </span>
                                 {/* Ranqueamento Dinâmico */}
@@ -445,7 +445,7 @@ export function TripComparisonDashboard({
 
                             {/* Status e Ranqueamento Dinâmico */}
                             <div className="mt-4 flex flex-col items-start gap-1">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${trip2.status === "ongoing" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${!trip2.status ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
                                     {getStatusLabel(trip2.status)}
                                 </span>
                                 {/* Ranqueamento Dinâmico */}

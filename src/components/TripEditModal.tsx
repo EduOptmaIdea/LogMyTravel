@@ -19,7 +19,7 @@ interface TripEditModalProps {
     departureDate: string;
     departureTime: string;
     details?: string;
-    status: "ongoing" | "completed";
+    status: boolean;
     arrivalLocation?: string;
     arrivalCoords?: LocationData | null;
     arrivalDate?: string;
@@ -40,7 +40,7 @@ interface TripEditModalProps {
     arrivalDate?: string;
     arrivalTime?: string;
     finalDetails?: string;
-    status: "ongoing" | "completed";
+    status: boolean;
     startKm?: number | null;
     endKm?: number | null;
   }) => Promise<void>;
@@ -79,7 +79,7 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
   const [departureTime, setDepartureTime] = useState(trip.departureTime);
   const [details, setDetails] = useState<string>(trip.details || "");
 
-  const [isCompleting, setIsCompleting] = useState(trip.status === "completed");
+  const [isCompleting, setIsCompleting] = useState(!!trip.status);
   const [sameLocation, setSameLocation] = useState(false);
   const [arrivalLocation, setArrivalLocation] = useState(trip.arrivalLocation || "");
   const [arrivalCoords, setArrivalCoords] = useState<LocationData | null | undefined>(trip.arrivalCoords);
@@ -135,18 +135,18 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
         departureCoords,
         departureDate: formattedDepartureDate,
         departureTime,
-        details: isCompleting ? (finalDetails || details) : details,
+        details,
         ...(isCompleting && {
           arrivalLocation: sameLocation ? departureLocation : arrivalLocation,
           arrivalCoords: sameLocation ? departureCoords : arrivalCoords,
           arrivalDate: formattedArrivalDate,
           arrivalTime,
-          status: "completed",
+          status: true,
         }),
         ...(isCompleting
-          ? { status: "completed" }
+          ? { status: true }
           : {
-              status: "ongoing",
+              status: false,
               arrivalLocation: "",
               arrivalCoords: null,
               arrivalDate: "",
@@ -226,9 +226,9 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
 
           <div className="pt-2 border-t">
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Encerrar viagem?</span>
-              <Switch checked={isCompleting} onCheckedChange={setIsCompleting} />
-            </div>
+            <span className="text-gray-600">Viagem encerrada</span>
+            <Switch checked={isCompleting} onCheckedChange={setIsCompleting} />
+          </div>
           </div>
 
           {isCompleting && (

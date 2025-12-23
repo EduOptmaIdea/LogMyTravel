@@ -534,7 +534,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
   // Total de gastos das paradas
   const tripCostTotal = useMemo(() => {
     // Somar diretamente valores em reais (sem dividir por 100)
-    const totalReais = (selectedTrip?.stops || []).reduce((acc, s) => acc + (Number(s.cost) || 0), 0);
+    const totalReais = (selectedTrip?.stops || []).reduce((acc: number, s: any) => acc + (Number(s.cost) || 0), 0);
     return totalReais;
   }, [selectedTrip?.stops]);
 
@@ -1116,7 +1116,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                 onCheckedChange={(val) => {
                    // Bloquear mudança para false se houver paradas com Dirigindo=true
                    if (!val) {
-                     const hasDrivingStops = (selectedTrip?.stops || []).some((s) => Boolean(s.wasDriving));
+                     const hasDrivingStops = (selectedTrip?.stops || []).some((s: any) => Boolean(s.wasDriving));
                      if (hasDrivingStops) {
                        toast.error(
                          "Não é possível mudar esta viagem para trechos sem veículos a dirigir, pois existem paradas registradas com veículos vinculados. Para essa alteração, modifique a condição das paradas para ‘Dirigindo: Não’ e refaça esta ação."
@@ -1645,7 +1645,6 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                         segmentDate: dateStr,
                         initialKm: Math.round(kmNum),
                         currentKm: Math.round(kmNum),
-                        isInitial: true,
                       });
                       // Cria parada automática "Início"
                       const timeStr = new Date().toTimeString().slice(0, 5);

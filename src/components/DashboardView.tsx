@@ -131,7 +131,7 @@ export function DashboardView({ trips }: DashboardViewProps) {
 
         let endDate: Date | null = null;
         if (
-            trip.status === "completed" &&
+            trip.status &&
             trip.arrivalDate &&
             trip.arrivalTime
         ) {
@@ -226,12 +226,12 @@ export function DashboardView({ trips }: DashboardViewProps) {
                     </p>
                     <span
                         className={`text-xs px-2 py-1 rounded-full mt-2 inline-block ${
-                            lastTrip.status === "ongoing"
+                            !lastTrip.status
                                 ? "bg-blue-100 text-blue-700"
                                 : "bg-green-100 text-green-700"
                         }`}
                     >
-                        {lastTrip.status === "ongoing"
+                        {!lastTrip.status
                             ? "Em andamento"
                             : "Encerrada"}
                     </span>
