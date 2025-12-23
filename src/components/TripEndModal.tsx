@@ -195,9 +195,15 @@ export default function TripEndModal({ trip, onClose, onSave }: TripEndModalProp
             <Button
               onClick={async () => {
                 try {
-                  await reopenTrip(trip.id);
-                  // força atualização de trips para refletir status imediatamente
-                  try { const { refresh } = useTrips(); await (refresh as any)?.(); } catch {}
+                  const updates = {
+                    trip_completed: false,
+                    arrivalLocation: null as any,
+                    arrivalCoords: null,
+                    arrivalDate: null as any,
+                    arrivalTime: null as any,
+                    details: "",
+                  } as Partial<Trip>;
+                  if (onSave) await onSave(updates);
                 } catch {}
                 onClose();
               }}
