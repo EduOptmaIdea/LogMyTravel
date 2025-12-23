@@ -392,10 +392,10 @@ export function useTrips() {
   const reopenTrip = async (id: string): Promise<Trip> => {
     const updates: Partial<Trip> = {
       trip_completed: false,
-      arrivalLocation: "",
+      arrivalLocation: null as any,
       arrivalCoords: null,
-      arrivalDate: "",
-      arrivalTime: "",
+      arrivalDate: null as any,
+      arrivalTime: null as any,
       details: "",
     };
     return updateTrip(id, updates);

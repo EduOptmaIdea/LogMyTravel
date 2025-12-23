@@ -1521,19 +1521,23 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
       </div>
 
       {/* Modal de Gerenciamento de Veículo */}
-      {showEndModal && (
-        <React.Suspense
-          fallback={<div className="p-4 text-center">Carregando...</div>}
-        >
-          <TripEndModal
-            trip={selectedTrip}
-            onClose={() => {
-              setShowEndModal(false);
-              setIsEnding(false);
-            }}
-          />
-        </React.Suspense>
-      )}
+          {showEndModal && (
+            <React.Suspense
+              fallback={<div className="p-4 text-center">Carregando...</div>}
+            >
+              <TripEndModal
+                trip={selectedTrip}
+                onClose={() => {
+                  setShowEndModal(false);
+                  setIsEnding(false);
+                }}
+                onSave={async (updates) => {
+                  const fn = updateTripProp ? updateTripProp : async (id: string, ups: Partial<Trip>) => Promise.resolve(ups as any);
+                  await fn(selectedTrip.id, updates);
+                }}
+              />
+            </React.Suspense>
+          )}
       {/* Aviso modal para seleção de veículo antes de adicionar/editar parada */}
       {showVehicleWarning && renderConfirmationModal(
         true,

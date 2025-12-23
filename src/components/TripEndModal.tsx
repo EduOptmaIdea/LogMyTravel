@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import { toast } from "sonner";
 import { getAccuratePosition } from "../utils/offline/useGeoAccurate";
-import { useTrips, type Trip } from "./useTrips";
+import type { Trip } from "./useTrips";
 
 interface LocationData {
   latitude: number;
@@ -15,6 +15,7 @@ interface LocationData {
 interface TripEndModalProps {
   trip: Trip;
   onClose: () => void;
+  onSave?: (updates: Partial<Trip>) => Promise<void>;
 }
 
 function getBrasiliaDateTime() {
@@ -38,8 +39,7 @@ function formatDateForDisplay(dateStr: string): string {
   return `${d}/${m}/${y}`;
 }
 
-export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
-  const { updateTrip, reopenTrip } = useTrips();
+export default function TripEndModal({ trip, onClose, onSave }: TripEndModalProps) {
 
   const now = getBrasiliaDateTime();
 
@@ -112,14 +112,15 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
     const finalArrivalCoords = (sameLocation || !arrivalLocation?.trim()) ? (trip.departureCoords || null) : arrivalCoords;
 
     try {
-      await updateTrip(trip.id, {
+      const updates: Partial<Trip> = {
         trip_completed: true,
         arrivalLocation: finalArrivalLocation,
         arrivalCoords: finalArrivalCoords,
         arrivalDate: formattedArrivalDate,
         arrivalTime,
         details,
-      });
+      };
+      if (onSave) await onSave(updates);
       toast.success("Viagem finalizada!");
       onClose();
     } catch (err) {

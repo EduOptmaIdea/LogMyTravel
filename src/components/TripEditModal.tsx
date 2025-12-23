@@ -146,11 +146,11 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
         ...(isCompleting
           ? { trip_completed: true }
           : {
-              trip_completed: false,
-              arrivalLocation: "",
+            trip_completed: false,
+              arrivalLocation: null as any,
               arrivalCoords: null,
-              arrivalDate: "",
-              arrivalTime: "",
+              arrivalDate: null as any,
+              arrivalTime: null as any,
               finalDetails: "",
             }),
       });
