@@ -224,17 +224,22 @@ export function DashboardView({ trips }: DashboardViewProps) {
                         {formatDate(lastTrip.departureDate)} •{" "}
                         {lastTrip.departureTime}
                     </p>
-                    <span
-                        className={`text-xs px-2 py-1 rounded-full mt-2 inline-block ${
-                            !lastTrip.status
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-green-100 text-green-700"
-                        }`}
-                    >
-                        {!lastTrip.status
-                            ? "Em andamento"
-                            : "Encerrada"}
-                    </span>
+                    {(() => {
+                        const completed = typeof (lastTrip as any).trip_completed === 'boolean'
+                          ? (lastTrip as any).trip_completed
+                          : ((lastTrip as any).status === 'completed');
+                        return (
+                            <span
+                                className={`text-xs px-2 py-1 rounded-full mt-2 inline-block ${
+                                    !completed
+                                        ? "bg-blue-100 text-blue-700"
+                                        : "bg-green-100 text-green-700"
+                                }`}
+                            >
+                                {!completed ? "Em andamento" : "Encerrada"}
+                            </span>
+                        );
+                    })()}
                 </div>
             )}
 

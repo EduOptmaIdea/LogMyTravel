@@ -387,9 +387,9 @@ export function TripComparisonDashboard({
 
                             {/* Status e Ranqueamento Dinâmico */}
                             <div className="mt-4 flex flex-col items-start gap-1">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${!trip1.status ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
-                                    {getStatusLabel(trip1.status)}
-                                </span>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${!(trip1 as any).trip_completed ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
+                                    {getStatusLabel((trip1 as any).trip_completed)}
+                            </span>
                                 {/* Ranqueamento Dinâmico */}
                                 {visibleSlotCount > 1 && (
                                     <>
@@ -445,9 +445,9 @@ export function TripComparisonDashboard({
 
                             {/* Status e Ranqueamento Dinâmico */}
                             <div className="mt-4 flex flex-col items-start gap-1">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${!trip2.status ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
-                                    {getStatusLabel(trip2.status)}
-                                </span>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${!(trip2 as any).trip_completed ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
+                                    {getStatusLabel((trip2 as any).trip_completed)}
+                            </span>
                                 {/* Ranqueamento Dinâmico */}
                                 {visibleSlotCount > 1 && (
                                     <>

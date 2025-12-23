@@ -68,7 +68,7 @@ interface TripData {
   startKm: number;
   hasVehicle: boolean;
   vehicleIds: string[];
-  status: boolean;
+  trip_completed: boolean;
 }
 
 interface TripNewProps {
@@ -222,7 +222,7 @@ export function TripNew({ onSaveTrip, onRequireLogin }: TripNewProps) {
         startKm: parsedStartKm,
         hasVehicle: false,
         vehicleIds: [],
-        status: false,
+        trip_completed: false,
       });
       toast.success("Viagem iniciada com sucesso!");
       resetForm();

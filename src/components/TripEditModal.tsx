@@ -19,7 +19,7 @@ interface TripEditModalProps {
     departureDate: string;
     departureTime: string;
     details?: string;
-    status: boolean;
+    trip_completed: boolean;
     arrivalLocation?: string;
     arrivalCoords?: LocationData | null;
     arrivalDate?: string;
@@ -40,7 +40,7 @@ interface TripEditModalProps {
     arrivalDate?: string;
     arrivalTime?: string;
     finalDetails?: string;
-    status: boolean;
+    trip_completed: boolean;
     startKm?: number | null;
     endKm?: number | null;
   }) => Promise<void>;
@@ -79,7 +79,7 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
   const [departureTime, setDepartureTime] = useState(trip.departureTime);
   const [details, setDetails] = useState<string>(trip.details || "");
 
-  const [isCompleting, setIsCompleting] = useState(!!trip.status);
+  const [isCompleting, setIsCompleting] = useState(!!trip.trip_completed);
   const [sameLocation, setSameLocation] = useState(false);
   const [arrivalLocation, setArrivalLocation] = useState(trip.arrivalLocation || "");
   const [arrivalCoords, setArrivalCoords] = useState<LocationData | null | undefined>(trip.arrivalCoords);
@@ -141,12 +141,12 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
           arrivalCoords: sameLocation ? departureCoords : arrivalCoords,
           arrivalDate: formattedArrivalDate,
           arrivalTime,
-          status: true,
+          trip_completed: true,
         }),
         ...(isCompleting
-          ? { status: true }
+          ? { trip_completed: true }
           : {
-              status: false,
+              trip_completed: false,
               arrivalLocation: "",
               arrivalCoords: null,
               arrivalDate: "",

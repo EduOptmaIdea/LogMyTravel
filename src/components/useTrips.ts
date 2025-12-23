@@ -13,7 +13,7 @@ export interface Trip {
   departureCoords?: { latitude: number; longitude: number } | null;
   startKm?: number | null;
   endKm?: number | null;
-  status: boolean;
+  trip_completed: boolean;
   hasVehicle?: boolean;
   vehicleIds?: string[];
   arrivalLocation?: string;
@@ -127,7 +127,9 @@ export function useTrips() {
           departureCoords: row.departure_coords ?? null,
           startKm: row.start_km,
           endKm: row.end_km,
-          status: typeof row.status === 'boolean' ? row.status : row.status === 'completed',
+          trip_completed: typeof row.trip_completed === 'boolean'
+            ? row.trip_completed
+            : (typeof row.status === 'boolean' ? row.status : row.status === 'completed'),
           hasVehicle: row.has_vehicle,
           vehicleIds: row.vehicle_ids,
           arrivalLocation: row.arrival_location ?? undefined,
@@ -187,14 +189,30 @@ export function useTrips() {
     for (const item of items) {
       try {
         if (item.kind === "trip_insert") {
-          const payload = { ...toSnakeTrip(item.payload), user_id: user.id };
-          const { data } = await supabase.from("trips").insert([payload]).select().single();
+          const base = toSnakeTrip(item.payload);
+          const payloadBool = { ...base, trip_completed: !!item.payload.trip_completed, user_id: user.id };
+          const payloadStr = { ...base, status: item.payload.trip_completed ? 'completed' : 'ongoing', user_id: user.id };
+          let data: any | null = null;
+          try {
+            ({ data } = await supabase.from("trips").insert([payloadBool]).select().single());
+          } catch {
+            ({ data } = await supabase.from("trips").insert([payloadStr]).select().single());
+          }
           if (data?.id) {
             const mapped = mapRowToTrip(data);
             setTrips((prev) => prev.map((t) => t.id === item.localId ? mapped : t));
           }
         } else if (item.kind === "trip_update") {
-          await supabase.from("trips").update(toSnakeTrip(item.payload)).eq("id", item.id);
+          const base = toSnakeTrip(item.payload);
+          const payloadBool = { ...base };
+          if (typeof item.payload.trip_completed === 'boolean') payloadBool.trip_completed = item.payload.trip_completed;
+          const payloadStr = { ...base };
+          if (typeof item.payload.trip_completed === 'boolean') payloadStr.status = item.payload.trip_completed ? 'completed' : 'ongoing';
+          try {
+            await supabase.from("trips").update(payloadBool).eq("id", item.id);
+          } catch {
+            await supabase.from("trips").update(payloadStr).eq("id", item.id);
+          }
         } else if (item.kind === "trip_delete") {
           await supabase.from("trips").delete().eq("id", item.id);
         } else if (item.kind === "vehicle_insert") {
@@ -258,7 +276,7 @@ export function useTrips() {
       arrivalDate: "arrival_date",
       arrivalTime: "arrival_time",
       details: "details",
-      status: "status",
+      trip_completed: "trip_completed",
       name: "name",
     };
     const out: Record<string, any> = {};
@@ -278,7 +296,9 @@ export function useTrips() {
     departureCoords: row.departure_coords ?? null,
     startKm: row.start_km,
     endKm: row.end_km,
-    status: typeof row.status === 'boolean' ? row.status : row.status === 'completed',
+    trip_completed: typeof row.trip_completed === 'boolean'
+      ? row.trip_completed
+      : (typeof row.status === 'boolean' ? row.status : row.status === 'completed'),
     hasVehicle: row.has_vehicle,
     vehicleIds: row.vehicle_ids,
     arrivalLocation: row.arrival_location ?? undefined,
@@ -290,9 +310,20 @@ export function useTrips() {
 
   const saveTrip = async (trip: any): Promise<Trip> => {
     if (supabase && online) {
-      const payload = { ...toSnakeTrip(trip), user_id: user?.id };
-      const { data, error } = await supabase.from("trips").insert([payload]).select().single();
-      if (error) throw error;
+      const base = toSnakeTrip(trip);
+      const payloadBool = { ...base, trip_completed: !!trip.trip_completed, user_id: user?.id };
+      const payloadStr = { ...base, status: trip.trip_completed ? 'completed' : 'ongoing', user_id: user?.id };
+      let data: any | null = null;
+      let error: any | null = null;
+      try {
+        ({ data, error } = await supabase.from("trips").insert([payloadBool]).select().single());
+        if (error) throw error;
+      } catch {
+        const res = await supabase.from("trips").insert([payloadStr]).select().single();
+        data = res.data;
+        error = res.error;
+        if (error) throw error;
+      }
       const mapped = mapRowToTrip(data);
       setTrips((prev) => [mapped, ...prev]);
       saveCaches([mapped, ...trips], vehicles);
@@ -322,6 +353,7 @@ export function useTrips() {
         arrivalCoords: "arrival_coords",
         arrivalDate: "arrival_date",
         arrivalTime: "arrival_time",
+        trip_completed: "trip_completed",
       };
       const out: Record<string, any> = {};
       Object.keys(obj).forEach((k) => {
@@ -330,10 +362,23 @@ export function useTrips() {
       });
       return out;
     };
-    const payload = toSnake(updates as Record<string, any>);
+    const base = toSnake(updates as Record<string, any>);
+    const payloadBool = { ...base };
+    if (typeof updates.trip_completed === 'boolean') payloadBool.trip_completed = updates.trip_completed;
+    const payloadStr = { ...base };
+    if (typeof updates.trip_completed === 'boolean') payloadStr.status = updates.trip_completed ? 'completed' : 'ongoing';
     if (supabase && online) {
-      const { data, error } = await supabase.from("trips").update(payload).eq("id", id).select().single();
-      if (error) throw error;
+      let data: any | null = null;
+      let error: any | null = null;
+      try {
+        ({ data, error } = await supabase.from("trips").update(payloadBool).eq("id", id).select().single());
+        if (error) throw error;
+      } catch {
+        const res = await supabase.from("trips").update(payloadStr).eq("id", id).select().single();
+        data = res.data;
+        error = res.error;
+        if (error) throw error;
+      }
       setTrips((prev) => prev.map((t) => t.id === id ? { ...t, ...updates } : t));
       return data as Trip;
     }
@@ -346,7 +391,7 @@ export function useTrips() {
 
   const reopenTrip = async (id: string): Promise<Trip> => {
     const updates: Partial<Trip> = {
-      status: false,
+      trip_completed: false,
       arrivalLocation: "",
       arrivalCoords: null,
       arrivalDate: "",

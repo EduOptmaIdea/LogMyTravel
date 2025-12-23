@@ -44,7 +44,7 @@ export const TripCard = ({
       const startDate = new Date(y, m - 1, d, h, min);
       if (isNaN(startDate.getTime())) return "—";
 
-      if (trip.status === "completed" && trip.arrivalDate && trip.arrivalTime) {
+      if (trip.status && trip.arrivalDate && trip.arrivalTime) {
         const [ad, am, ay] = trip.arrivalDate.split("/").map(Number);
         const [ah, amin] = trip.arrivalTime.split(":").map(Number);
         if (isNaN(ad) || isNaN(am) || isNaN(ay) || isNaN(ah) || isNaN(amin)) {
@@ -125,7 +125,7 @@ export const TripCard = ({
 
       if (byVehicle.size === 0) return "—";
 
-      if (trip.status === "completed") {
+      if (trip.status) {
         // Mostrar apenas KM final (soma dos atuais por veículo)
         const sumFinal = Array.from(byVehicle.values()).reduce((acc, v) => acc + (v.current ?? 0), 0);
         return `${Math.round(sumFinal)} km`;
@@ -144,7 +144,9 @@ export const TripCard = ({
     return `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`;
   };
 
-  const isCompleted = trip.status === "completed";
+  const isCompleted = (typeof (trip as any).trip_completed === 'boolean')
+    ? (trip as any).trip_completed
+    : ((trip as any).status === 'completed');
 
   // 👇 Resolve veículo pelo estado vindo por props; fallback para localStorage
   const getVehicleById = (id: string): Vehicle | null => {

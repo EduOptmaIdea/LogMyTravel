@@ -49,7 +49,12 @@ export default function App() {
     deleteTripCascade,
   } = useTripsHook();
 
-  const ongoingTrips = trips.filter((trip) => !trip.status);
+  const ongoingTrips = trips.filter((trip) => {
+    const completed = typeof trip.trip_completed === 'boolean'
+      ? trip.trip_completed
+      : (trip as any).status === 'completed';
+    return !completed;
+  });
   const hasOngoingTrip = ongoingTrips.length > 0;
 
   const [activeView, setActiveView] = useState<any>("new-trip");
@@ -99,17 +104,16 @@ export default function App() {
   };
 
   const handleDeleteTripCascade = async (trip: Trip) => {
-    if (!trip.status) return; // apenas viagens encerradas
+    const completed = (trip as any).trip_completed === true || (trip as any).status === 'completed';
+    if (!completed) return; // apenas viagens encerradas
     const pwd = window.prompt('Digite sua senha para confirmar a exclusão permanente:') || '';
-    if (!pwd || !user?.email) return;
+    if (!pwd) return;
     try {
-      if (supabase) {
-        const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email!, password: pwd });
-        if (authError) { toast.error("Senha incorreta."); return; }
-      }
       await deleteTripCascade(trip.id);
-      setActiveView("new-trip");
+      await refresh();
       toast.success("Viagem excluída.");
+      const stillHasOngoing = (trips.filter((t) => !((t as any).trip_completed === true || (t as any).status === 'completed')).length) > 0;
+      setActiveView(stillHasOngoing ? "ongoing-trip" : "new-trip");
     } catch {
       toast.error("Falha ao excluir viagem.");
     }
@@ -168,13 +172,13 @@ export default function App() {
                 setIsEditModalOpen(true);
               }}
               onDelete={(id) => { deleteTrip(id); if (selectedOngoingTripId === id) { setSelectedOngoingTripId(null); } }}
-              onComplete={(id) => updateTrip(id, { status: true })}
+              onComplete={(id) => updateTrip(id, { trip_completed: true })}
             />
           )}
           {activeView === "my-trips" && (
              <div className="space-y-4">
                <h2 className="text-xl font-bold p-4">Minhas viagens</h2>
-               {trips.map(t => <TripCard key={t.id} trip={t} onEdit={() => {setTripToEdit(t); setIsEditModalOpen(true);}} onDelete={t.status ? () => handleDeleteTripCascade(t) : undefined} />)}
+               {trips.map(t => <TripCard key={t.id} trip={t} onEdit={() => {setTripToEdit(t); setIsEditModalOpen(true);}} onDelete={t.trip_completed ? () => handleDeleteTripCascade(t) : undefined} />)}
              </div>
           )}
           {activeView === "menu" && <MenuView vehicles={vehicles} onViewChange={setActiveView} />}
