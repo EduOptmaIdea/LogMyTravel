@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Camera, Fuel, Utensils, Bed, Camera as CameraIcon, HeartHandshake, MoreHorizontal, PlaneLanding, PlaneTakeoff } from 'lucide-react';
 import { Button } from './ui/button';
+import { getAccuratePosition } from "../utils/offline/useGeoAccurate";
 
 // Tipos (reutilizados do useTrips.ts)
 interface LocationData {
@@ -233,7 +234,18 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
     onSave(stopData);
   };
 
-  
+  const captureStopLocation = async () => {
+    try {
+      const start = performance.now();
+      const fix = await getAccuratePosition(50, 12000);
+      setLocation({ latitude: fix.latitude, longitude: fix.longitude });
+      const ms = Math.round(performance.now() - start);
+      setNotes((prev) => prev ? `${prev} • GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms` : `GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms`);
+      alert('Localização da parada salva!');
+    } catch {
+      alert('Falha ao capturar localização da parada.');
+    }
+  };
 
   const handleAddPhoto = () => {
     // Simula upload com URL de placeholder
@@ -258,6 +270,17 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
   const distanceTraveled = (wasDriving && prevKmNum !== null && (arrNum !== null || depNum !== null))
     ? Math.max(0, (depNum ?? arrNum!) - prevKmNum)
     : null;
+
+  const renderLocationAssist = () => (
+    <div className="flex items-center gap-3">
+      <button type="button" onClick={captureStopLocation} className="text-xs text-fuchsia-600 hover:underline">
+        📍 Capturar localização da parada
+      </button>
+      {location && (
+        <span className="text-[10px] text-teal-700">Coords salvas</span>
+      )}
+    </div>
+  );
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-4 space-y-4 border border-gray-100">
@@ -345,32 +368,7 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
             <button
               type="button"
               className="px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
-              onClick={() => {
-                // Tentar geolocalização; se indisponível/negada, usar fallback de teste
-                if (typeof navigator !== 'undefined' && navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                      setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-                    },
-                    () => {
-                      const coords = [
-                        { latitude: -18.425342748395245, longitude: -49.192700347855464 },
-                        { latitude: -19.76382603526007, longitude: -47.975404045978244 },
-                      ];
-                      const pick = coords[Math.floor(Math.random() * coords.length)];
-                      setLocation(pick);
-                    },
-                    { enableHighAccuracy: false, timeout: 5000 }
-                  );
-                } else {
-                  const coords = [
-                    { latitude: -18.425342748395245, longitude: -49.192700347855464 },
-                    { latitude: -19.76382603526007, longitude: -47.975404045978244 },
-                  ];
-                  const pick = coords[Math.floor(Math.random() * coords.length)];
-                  setLocation(pick);
-                }
-              }}
+              onClick={captureStopLocation}
             >
               Pegar localização
             </button>
@@ -379,6 +377,9 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
             ) : (
               <span className="text-xs text-gray-500">Sem coordenadas</span>
             )}
+          </div>
+          <div className="mt-1">
+            {renderLocationAssist()}
           </div>
         </div>
 

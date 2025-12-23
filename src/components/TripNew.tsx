@@ -3,6 +3,7 @@ import type { ChangeEvent, ReactNode, ButtonHTMLAttributes, InputHTMLAttributes 
 import { MapPin, Map } from "lucide-react";
 import type { Vehicle } from "./useTrips";
 import { useAuth } from "../utils/auth/AuthProvider";
+import { getAccuratePosition } from "../utils/offline/useGeoAccurate";
 import { useWarningsModal } from "./hooks/useWarningsModal";
 
 const toast = {
@@ -93,6 +94,8 @@ export function TripNew({ onSaveTrip, onRequireLogin }: TripNewProps) {
 
   const [departureLocation, setDepartureLocation] = useState<LocationData | null>(null);
   const [departureMessage, setDepartureMessage] = useState("");
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [gpsFixMs, setGpsFixMs] = useState<number | null>(null);
   const [loadingDeparture, setLoadingDeparture] = useState(false);
   const { openModal, element: warningsModal } = useWarningsModal();
   const tipForField = (field: string) => {
@@ -132,11 +135,11 @@ export function TripNew({ onSaveTrip, onRequireLogin }: TripNewProps) {
     try {
       setLoadingDeparture(true);
       setDepartureMessage("");
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        if (!('geolocation' in navigator)) reject(new Error('Geolocalização indisponível'));
-        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-      });
-      const loc: LocationData = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      const start = performance.now();
+      const fix = await getAccuratePosition(50, 12000);
+      const loc: LocationData = { latitude: fix.latitude, longitude: fix.longitude };
+      setGpsAccuracy(typeof fix.accuracy === "number" ? Math.round(fix.accuracy) : null);
+      setGpsFixMs(Math.round(performance.now() - start));
       setDepartureLocation(loc);
       if (!departureText.trim()) setDepartureText("Minha localização atual");
       setDepartureMessage("Localização salva com sucesso");
@@ -277,6 +280,9 @@ export function TripNew({ onSaveTrip, onRequireLogin }: TripNewProps) {
             )}
             {departureMessage && (
               <p className={`text-xs font-medium ${departureMessage.includes("sucesso") ? "text-teal-600" : "text-red-600"}`}>{departureMessage}</p>
+            )}
+            {gpsAccuracy !== null && (
+              <span className="text-[10px] text-gray-600">Precisão ~{gpsAccuracy} m • Fix {gpsFixMs ?? 0} ms</span>
             )}
           </div>
         </div>
