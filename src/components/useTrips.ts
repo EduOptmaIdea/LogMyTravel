@@ -525,7 +525,10 @@ export function useTrips() {
           .select()
           .single();
         if (error) throw error;
-        return data as Vehicle;
+        const saved = data as Vehicle;
+        setVehicles((prev) => [saved, ...prev]);
+        saveCaches(trips, [saved, ...vehicles]);
+        return saved;
       }
       const localId = `local-${safeRandomUUID()}`;
       const localV: Vehicle = { ...v, id: localId, syncStatus: 'pending' } as Vehicle;
@@ -543,7 +546,10 @@ export function useTrips() {
           .select()
           .single();
         if (error) throw error;
-        return data as Vehicle;
+        const updated = data as Vehicle;
+        setVehicles((prev) => prev.map((vv) => vv.id === id ? updated : vv));
+        saveCaches(trips, vehicles.map((vv) => vv.id === id ? updated : vv));
+        return updated;
       }
       setVehicles((prev) => prev.map((vv) => vv.id === id ? { ...vv, ...v, syncStatus: 'pending' } : vv));
       enqueue({ kind: "vehicle_update", id, payload: v });

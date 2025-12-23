@@ -98,6 +98,7 @@ export default function App() {
       const saved = await saveTrip(tripData);
       setSelectedOngoingTripId(saved.id);
       setActiveView("ongoing-trip");
+      await refresh();
     } catch (e) {
       toast.error("Erro ao salvar viagem.");
     }
