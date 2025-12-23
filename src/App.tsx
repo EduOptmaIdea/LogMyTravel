@@ -149,7 +149,7 @@ export default function App() {
                 setTripToEdit(trip);
                 setIsEditModalOpen(true);
               }}
-              onDelete={(id) => deleteTrip(id)}
+              onDelete={(id) => { deleteTrip(id); if (selectedOngoingTripId === id) { setSelectedOngoingTripId(null); } }}
               onComplete={(id) => updateTrip(id, { status: 'completed' })}
             />
           )}
