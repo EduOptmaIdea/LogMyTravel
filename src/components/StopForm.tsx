@@ -238,12 +238,21 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
     try {
       const start = performance.now();
       const fix = await getAccuratePosition(50, 12000);
-      setLocation({ latitude: fix.latitude, longitude: fix.longitude });
+      const loc = { latitude: fix.latitude, longitude: fix.longitude };
+      try { localStorage.setItem('last_location', JSON.stringify(loc)); } catch {}
+      setLocation(loc);
       const ms = Math.round(performance.now() - start);
       setNotes((prev: string) => prev ? `${prev} • GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms` : `GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms`);
       alert('Localização da parada salva!');
     } catch {
-      alert('Falha ao capturar localização da parada.');
+      const raw = localStorage.getItem('last_location');
+      const last = raw ? JSON.parse(raw) as LocationData : null;
+      if (last) {
+        setLocation(last);
+        alert('Falha no GPS. Usando última localização. Você pode editar depois.');
+      } else {
+        alert('Falha ao capturar localização da parada.');
+      }
     }
   };
 

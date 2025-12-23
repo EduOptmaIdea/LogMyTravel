@@ -194,12 +194,22 @@ export function TripNew({ onSaveTrip, onRequireLogin }: TripNewProps) {
           navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
         });
         finalDepartureLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        try { localStorage.setItem('last_location', JSON.stringify(finalDepartureLocation)); } catch {}
         setDepartureLocation(finalDepartureLocation);
         if (!departureText.trim()) setDepartureText("Minha localização atual");
         setDepartureMessage("Localização salva automaticamente");
       } catch (e: any) {
-        setDepartureMessage(e?.message ? String(e.message) : "Falha ao obter localização");
-        return;
+        const raw = localStorage.getItem('last_location');
+        const last = raw ? JSON.parse(raw) as LocationData : null;
+        if (last) {
+          finalDepartureLocation = last;
+          setDepartureLocation(last);
+          if (!departureText.trim()) setDepartureText("Última localização");
+          setDepartureMessage("Usando última localização disponível");
+        } else {
+          setDepartureMessage(e?.message ? String(e.message) : "Falha ao obter localização");
+          return;
+        }
       } finally {
         setLoadingDeparture(false);
         setTimeout(() => setDepartureMessage(""), 3000);

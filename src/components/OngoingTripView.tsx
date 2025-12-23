@@ -477,8 +477,8 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
       const segs = segments
         .filter((s) => s.vehicleId === vid)
         .sort((a, b) => {
-          const da = new Date(a.segmentDate).getTime();
-          const db = new Date(b.segmentDate).getTime();
+          const da = a.segmentDate ? new Date(a.segmentDate as string).getTime() : 0;
+          const db = b.segmentDate ? new Date(b.segmentDate as string).getTime() : 0;
           if (da !== db) return da - db;
           const ca = a.created_at ? new Date(a.created_at).getTime() : 0;
           const cb = b.created_at ? new Date(b.created_at).getTime() : 0;

@@ -63,21 +63,40 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
   const captureLocation = () => {
     try {
       if (!navigator?.geolocation) {
-        toast.error("Geolocalização não disponível. Habilite GPS.");
+        const raw = localStorage.getItem('last_location');
+        const last = raw ? JSON.parse(raw) as LocationData : (trip.departureCoords || null);
+        if (last) {
+          setArrivalCoords(last);
+          toast.error("Sem GPS. Usando última localização disponível. Você pode editar depois.");
+        } else {
+          toast.error("Sem GPS e sem última localização disponível.");
+        }
         return;
       }
       getAccuratePosition(50, 12000).then((fix) => {
-        setArrivalCoords({ latitude: fix.latitude, longitude: fix.longitude });
+        const loc = { latitude: fix.latitude, longitude: fix.longitude };
+        try { localStorage.setItem('last_location', JSON.stringify(loc)); } catch {}
+        setArrivalCoords(loc);
         toast.success("Localização salva!");
       }).catch(() => {
-        const fallback: LocationData = { latitude: -16.674, longitude: -49.262 };
-        setArrivalCoords(fallback);
-        toast.warning("Usando localização estimada. Verifique o GPS.");
+        const raw = localStorage.getItem('last_location');
+        const last = raw ? JSON.parse(raw) as LocationData : (trip.departureCoords || null);
+        if (last) {
+          setArrivalCoords(last);
+          toast.error("Falha no GPS. Usando última localização. Você pode editar depois.");
+        } else {
+          toast.error("Falha no GPS e sem última localização.");
+        }
       });
     } catch {
-      const fallback: LocationData = { latitude: -16.674, longitude: -49.262 };
-      setArrivalCoords(fallback);
-      toast.warning("Usando localização estimada.");
+      const raw = localStorage.getItem('last_location');
+      const last = raw ? JSON.parse(raw) as LocationData : (trip.departureCoords || null);
+      if (last) {
+        setArrivalCoords(last);
+        toast.error("Erro ao capturar. Usando última localização disponível.");
+      } else {
+        toast.error("Erro ao capturar localização.");
+      }
     }
   };
 
@@ -101,7 +120,7 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
         arrivalTime,
         details,
       });
-      toast.success("Viagem finalizada e movida para o histórico!");
+      toast.success("Viagem finalizada!");
       onClose();
     } catch (err) {
       console.error("Falha ao encerrar viagem", err);
