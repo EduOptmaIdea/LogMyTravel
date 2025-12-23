@@ -185,12 +185,14 @@ export function useTrips() {
     for (const item of items) {
       try {
         if (item.kind === "trip_insert") {
-          const { data } = await supabase.from("trips").insert([{ ...item.payload, user_id: user.id }]).select().single();
+          const payload = { ...toSnakeTrip(item.payload), user_id: user.id };
+          const { data } = await supabase.from("trips").insert([payload]).select().single();
           if (data?.id) {
-            setTrips((prev) => prev.map((t) => t.id === item.localId ? { ...t, id: data.id } : t));
+            const mapped = mapRowToTrip(data);
+            setTrips((prev) => prev.map((t) => t.id === item.localId ? mapped : t));
           }
         } else if (item.kind === "trip_update") {
-          await supabase.from("trips").update(item.payload).eq("id", item.id);
+          await supabase.from("trips").update(toSnakeTrip(item.payload)).eq("id", item.id);
         } else if (item.kind === "trip_delete") {
           await supabase.from("trips").delete().eq("id", item.id);
         } else if (item.kind === "vehicle_insert") {
@@ -239,11 +241,60 @@ export function useTrips() {
     }
   }, [online]);
 
+  const toSnakeTrip = (obj: Record<string, any>) => {
+    const map: Record<string, string> = {
+      departureDate: "departure_date",
+      departureTime: "departure_time",
+      departureLocation: "departure_location",
+      departureCoords: "departure_coords",
+      startKm: "start_km",
+      endKm: "end_km",
+      hasVehicle: "has_vehicle",
+      vehicleIds: "vehicle_ids",
+      arrivalLocation: "arrival_location",
+      arrivalCoords: "arrival_coords",
+      arrivalDate: "arrival_date",
+      arrivalTime: "arrival_time",
+      details: "details",
+      status: "status",
+      name: "name",
+    };
+    const out: Record<string, any> = {};
+    Object.keys(obj).forEach((k) => {
+      const nk = map[k] || k;
+      out[nk] = obj[k];
+    });
+    return out;
+  };
+
+  const mapRowToTrip = (row: any): Trip => ({
+    id: row.id,
+    name: row.name,
+    departureDate: row.departure_date,
+    departureTime: row.departure_time,
+    departureLocation: row.departure_location,
+    departureCoords: row.departure_coords ?? null,
+    startKm: row.start_km,
+    endKm: row.end_km,
+    status: row.status,
+    hasVehicle: row.has_vehicle,
+    vehicleIds: row.vehicle_ids,
+    arrivalLocation: row.arrival_location ?? undefined,
+    arrivalCoords: row.arrival_coords ?? null,
+    arrivalDate: row.arrival_date ?? undefined,
+    arrivalTime: row.arrival_time ?? undefined,
+    details: row.details ?? undefined,
+  });
+
   const saveTrip = async (trip: any): Promise<Trip> => {
     if (supabase && online) {
-      const { data, error } = await supabase.from("trips").insert([{ ...trip, user_id: user?.id }]).select().single();
+      const payload = { ...toSnakeTrip(trip), user_id: user?.id };
+      const { data, error } = await supabase.from("trips").insert([payload]).select().single();
       if (error) throw error;
-      return data as Trip;
+      const mapped = mapRowToTrip(data);
+      setTrips((prev) => [mapped, ...prev]);
+      saveCaches([mapped, ...trips], vehicles);
+      return mapped;
     }
     const localId = `local-${safeRandomUUID()}`;
     const localTrip: Trip = { ...trip, id: localId };
