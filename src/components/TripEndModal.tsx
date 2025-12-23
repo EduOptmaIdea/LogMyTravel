@@ -4,6 +4,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import { toast } from "sonner";
+import { getAccuratePosition } from "../utils/offline/useGeoAccurate";
 import { useTrips, type Trip } from "./useTrips";
 
 interface LocationData {
@@ -65,19 +66,14 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
         toast.error("Geolocalização não disponível. Habilite GPS.");
         return;
       }
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          setArrivalCoords({ latitude, longitude });
-          toast.success("Localização salva!");
-        },
-        (_) => {
-          const fallback: LocationData = { latitude: -16.674, longitude: -49.262 };
-          setArrivalCoords(fallback);
-          toast.warning("Usando localização estimada. Verifique o GPS.");
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
+      getAccuratePosition(50, 12000).then((fix) => {
+        setArrivalCoords({ latitude: fix.latitude, longitude: fix.longitude });
+        toast.success("Localização salva!");
+      }).catch(() => {
+        const fallback: LocationData = { latitude: -16.674, longitude: -49.262 };
+        setArrivalCoords(fallback);
+        toast.warning("Usando localização estimada. Verifique o GPS.");
+      });
     } catch {
       const fallback: LocationData = { latitude: -16.674, longitude: -49.262 };
       setArrivalCoords(fallback);
@@ -180,6 +176,8 @@ export default function TripEndModal({ trip, onClose }: TripEndModalProps) {
               onClick={async () => {
                 try {
                   await reopenTrip(trip.id);
+                  // força atualização de trips para refletir status imediatamente
+                  try { const { refresh } = useTrips(); await (refresh as any)?.(); } catch {}
                 } catch {}
                 onClose();
               }}

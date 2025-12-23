@@ -317,6 +317,7 @@ export function useTrips() {
 
   return {
     trips, vehicles, loading, syncing, syncBackground,
+    refresh: fetchData,
     saveTrip, updateTrip, deleteTrip,
     saveVehicle: async (v: Omit<Vehicle, "id">): Promise<Vehicle> => {
       if (supabase && online) {
