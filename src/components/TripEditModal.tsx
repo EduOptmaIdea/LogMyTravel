@@ -135,13 +135,12 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
         departureCoords,
         departureDate: formattedDepartureDate,
         departureTime,
-        details,
+        details: isCompleting ? (finalDetails || details) : details,
         ...(isCompleting && {
           arrivalLocation: sameLocation ? departureLocation : arrivalLocation,
           arrivalCoords: sameLocation ? departureCoords : arrivalCoords,
           arrivalDate: formattedArrivalDate,
           arrivalTime,
-          finalDetails,
           status: "completed",
         }),
         ...(isCompleting

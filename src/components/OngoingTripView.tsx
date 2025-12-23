@@ -452,7 +452,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
   };
 
   const currentKm = Math.round(
-    selectedTrip.endKm ?? selectedTrip.startKm ?? 0,
+    (selectedTrip?.endKm ?? selectedTrip?.startKm ?? 0),
   );
 
   // Carregar segmentos desta viagem quando selecionada
