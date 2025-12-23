@@ -10,34 +10,17 @@ export function useLogout() {
       }
     } catch {}
     try {
-      const preserveKeys = new Set(['trips_cache', 'vehicles_cache', 'offline_queue_v1']);
-      Object.keys(localStorage).forEach((k) => {
-        try {
-          if (online) {
-            localStorage.removeItem(k);
-          } else {
-            // offline: remove apenas tokens do supabase e estados voláteis
-            if (k.startsWith('sb-')) localStorage.removeItem(k);
-            if (!preserveKeys.has(k) && !k.startsWith('sb-')) {
-              // keep app caches; remove other non-essential keys
-              localStorage.removeItem(k);
-            }
-          }
-        } catch {}
-      });
+      try { localStorage.clear(); } catch {}
       try { sessionStorage.clear(); } catch {}
-      if (online) {
-        try {
-          if ('caches' in window) {
-            const keys = await caches.keys();
-            await Promise.all(keys.map((k) => caches.delete(k)));
-          }
-        } catch {}
-      } else {
-        try { localStorage.setItem('logout_pending', '1'); } catch {}
-      }
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+      } catch {}
       try { window.location.hash = ''; } catch {}
-      try { window.location.href = '/'; } catch { window.location.reload(); }
+      try { window.location.replace('/'); } catch {}
+      try { setTimeout(() => { try { window.location.reload(); } catch {} }, 50); } catch {}
     } catch {
       try { window.location.reload(); } catch {}
     }

@@ -53,18 +53,36 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       // Carrega perfil detalhado
       (async () => {
         try {
-          if (!supabase || !user?.id) return;
-          const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-          if (data) {
-            setFullName((data.full_name || '') as string);
-            setWhatsapp((data.whatsapp || '') as string);
-            setBirthDate(data.birth_date ? String(data.birth_date) : '');
-            setLastUpdatedAt(data.updated_at ? new Date(data.updated_at).toLocaleString('pt-BR') : null);
-          } else {
-            // cria registro vazio se inexistente
-            await supabase.from('profiles').insert({ id: user.id, full_name: '', nickname: current, whatsapp: '', birth_date: null }).select();
+          if (supabase && user?.id) {
+            const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (data) {
+              setFullName((data.full_name || '') as string);
+              setWhatsapp((data.whatsapp || '') as string);
+              setBirthDate(data.birth_date ? String(data.birth_date) : '');
+              setLastUpdatedAt(data.updated_at ? new Date(data.updated_at).toLocaleString('pt-BR') : null);
+              return;
+            } else {
+              await supabase.from('profiles').insert({ id: user.id, full_name: '', nickname: current, whatsapp: '', birth_date: null }).select();
+              setFullName('');
+              setWhatsapp('');
+              setBirthDate('');
+              setLastUpdatedAt(null);
+              return;
+            }
           }
-        } catch {}
+          // Fallback quando supabase não está configurado: usar metadata local
+          const meta = (user?.user_metadata || {}) as any;
+          setFullName((meta.full_name || '') as string);
+          setWhatsapp((meta.whatsapp || '') as string);
+          setBirthDate(meta.birth_date ? String(meta.birth_date) : '');
+          setLastUpdatedAt(null);
+        } catch {
+          const meta = (user?.user_metadata || {}) as any;
+          setFullName((meta.full_name || '') as string);
+          setWhatsapp((meta.whatsapp || '') as string);
+          setBirthDate(meta.birth_date ? String(meta.birth_date) : '');
+          setLastUpdatedAt(null);
+        }
       })();
     }
   }, [isOpen, user]);
