@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const deleteAccountCascade = async (password: string) => {
+  const deleteAccountCascade = async (_password: string) => {
     try {
       // Fallback: limpar dados locais sempre
       try {
@@ -166,15 +166,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setUser(null);
         return { error: null };
-      }
-
-      // Revalida senha do usuário antes de proceder
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: user.email!,
-        password,
-      });
-      if (authError) {
-        return { error: "Senha incorreta. Tente novamente." };
       }
 
       // Solicita exclusão imediata no servidor (service role) usando o token atual

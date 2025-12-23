@@ -240,7 +240,7 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
       const fix = await getAccuratePosition(50, 12000);
       setLocation({ latitude: fix.latitude, longitude: fix.longitude });
       const ms = Math.round(performance.now() - start);
-      setNotes((prev) => prev ? `${prev} • GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms` : `GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms`);
+      setNotes((prev: string) => prev ? `${prev} • GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms` : `GPS ~${Math.round(fix.accuracy ?? 0)}m/${ms}ms`);
       alert('Localização da parada salva!');
     } catch {
       alert('Falha ao capturar localização da parada.');

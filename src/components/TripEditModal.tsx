@@ -144,7 +144,16 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
           finalDetails,
           status: "completed",
         }),
-        status: isCompleting ? "completed" : "ongoing",
+        ...(isCompleting
+          ? { status: "completed" }
+          : {
+              status: "ongoing",
+              arrivalLocation: "",
+              arrivalCoords: null,
+              arrivalDate: "",
+              arrivalTime: "",
+              finalDetails: "",
+            }),
       });
       onClose();
     } catch (err) {

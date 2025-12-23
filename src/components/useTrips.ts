@@ -294,11 +294,11 @@ export function useTrips() {
   const reopenTrip = async (id: string): Promise<Trip> => {
     const updates: Partial<Trip> = {
       status: "ongoing",
-      arrivalLocation: null as any,
+      arrivalLocation: "",
       arrivalCoords: null,
-      arrivalDate: null as any,
-      arrivalTime: null as any,
-      details: null as any,
+      arrivalDate: "",
+      arrivalTime: "",
+      details: "",
     };
     return updateTrip(id, updates);
   };
