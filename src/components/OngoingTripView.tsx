@@ -244,6 +244,9 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
   const listRefVehicles = React.useRef<HTMLDivElement | null>(null);
   const [showDeleteStopConfirm, setShowDeleteStopConfirm] = useState(false);
   const [stopToDelete, setStopToDelete] = useState<any | null>(null);
+  const selectedTrip =
+    sortedTrips.find((t) => t.id === selectedTripId) ||
+    sortedTrips[0];
   const deriveIsDriving = (t: any): boolean => {
     if (!t) return false;
     if (typeof t.isDriving === 'boolean') return t.isDriving;
@@ -329,9 +332,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     return null;
   };
 
-  const selectedTrip =
-    sortedTrips.find((t) => t.id === selectedTripId) ||
-    sortedTrips[0];
+  
 
   // remover estado local: derivar sempre do objeto da viagem
 
