@@ -1131,10 +1131,14 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                    }
 
                    setIsDriving(val);
-                   // Persistir estado na viagem (Supabase ou localStorage via hook)
-                   (updateTripProp ? updateTripProp : async (id: string, updates: Partial<Trip>) => Promise.resolve(updates as any))(selectedTrip.id, { isDriving: val }).catch((e) => {
-                     console.warn("Falha ao atualizar isDriving", e);
-                   });
+                   // Persistir estado na viagem (Supabase ou localStorage via hook) e atualizar visão
+                   (updateTripProp ? updateTripProp : async (id: string, updates: Partial<Trip>) => Promise.resolve(updates as any))(selectedTrip.id, { isDriving: val })
+                     .then(async () => {
+                       try { await refresh?.(); } catch {}
+                     })
+                     .catch((e) => {
+                       console.warn("Falha ao atualizar isDriving", e);
+                     });
                    if (!val) {
                      // Ao desativar dirigir: remover veículos e zerar KM inicial
                      onRemoveVehicleFromTrip?.(selectedTrip.id);
