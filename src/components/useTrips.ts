@@ -348,6 +348,49 @@ export function useTrips() {
     }
   };
 
+  const toSnakeVehicle = (obj: Record<string, any>) => {
+    const map: Record<string, string> = {
+      nickname: "nickname",
+      licensePlate: "license_plate",
+      photoUrl: "photo_url",
+      photoPath: "photo_path",
+      active: "active",
+      category: "category",
+      make: "make",
+      model: "model",
+      color: "color",
+      year: "year",
+      vehicleType: "vehicle_type",
+      kmInitial: "km_initial",
+      fuels: "fuels",
+      syncStatus: "sync_status",
+    };
+    const out: Record<string, any> = {};
+    Object.keys(obj).forEach((k) => {
+      const nk = map[k] || k;
+      out[nk] = obj[k];
+    });
+    return out;
+  };
+
+  const mapRowToVehicle = (row: any): Vehicle => ({
+    id: row.id,
+    nickname: row.nickname,
+    licensePlate: row.license_plate,
+    photoUrl: row.photo_url ?? null,
+    photoPath: row.photo_path ?? null,
+    active: typeof row.active === "boolean" ? row.active : true,
+    category: row.category ?? undefined,
+    make: row.make ?? undefined,
+    model: row.model ?? undefined,
+    color: row.color ?? undefined,
+    year: typeof row.year === "number" ? row.year : undefined,
+    vehicleType: row.vehicle_type ?? undefined,
+    kmInitial: typeof row.km_initial === "number" ? row.km_initial : null,
+    fuels: Array.isArray(row.fuels) ? row.fuels : [],
+    syncStatus: row.sync_status ?? undefined,
+  });
+
   const updateTrip = async (id: string, updates: Partial<Trip>): Promise<Trip> => {
     // Converte camelCase para snake_case conforme schema do banco
     const toSnake = (obj: Record<string, any>) => {
@@ -533,11 +576,11 @@ export function useTrips() {
         try {
           const { data, error } = await supabase
             .from("vehicles")
-            .insert([{...v, user_id: user?.id}])
+            .insert([{...toSnakeVehicle(v), user_id: user?.id}])
             .select()
             .single();
           if (error) throw error;
-          const saved = data as Vehicle;
+          const saved = mapRowToVehicle(data);
           setVehicles((prev) => [saved, ...prev]);
           saveCaches(trips, [saved, ...vehicles]);
           return saved;
@@ -562,12 +605,12 @@ export function useTrips() {
       if (supabase && online) {
         const { data, error } = await supabase
           .from("vehicles")
-          .update(v)
+          .update(toSnakeVehicle(v))
           .eq("id", id)
           .select()
           .single();
         if (error) throw error;
-        const updated = data as Vehicle;
+        const updated = mapRowToVehicle(data);
         setVehicles((prev) => prev.map((vv) => vv.id === id ? updated : vv));
         saveCaches(trips, vehicles.map((vv) => vv.id === id ? updated : vv));
         return updated;
