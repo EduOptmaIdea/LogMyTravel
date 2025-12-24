@@ -1659,7 +1659,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                     }
                     try {
                       // Vincula veículo à viagem com KM inicial
-                      onAttachVehicleToTrip?.(selectedTrip.id, vehicleToAttachId, kmOne);
+                      await onAttachVehicleToTrip?.(selectedTrip.id, vehicleToAttachId, kmOne);
                       // Cria segmento inicial
                       const today = new Date();
                       const yyyy = today.getFullYear();
@@ -1703,6 +1703,8 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                       } catch (e) {
                         console.warn('Falha ao recarregar segmentos após vincular e criar parada', e);
                       }
+                      // Recarrega viagens para refletir vehicleIds atualizados
+                      try { await refresh?.(); } catch {}
                       toast.success('Veículo vinculado e ponto inicial criado.');
                       setShowAttachModal(false);
                       setVehicleToAttachId("");

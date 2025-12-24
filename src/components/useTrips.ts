@@ -340,7 +340,7 @@ export function useTrips() {
           // Remover campos não existentes e tentar novamente
           const retryPayload = { ...payloadStr };
           delete (retryPayload as any).is_driving;
-          const res = await supabase.from("trips").insert([payloadStr]).select('*').single();
+          const res = await supabase.from("trips").insert([retryPayload]).select('*').single();
           data = res.data;
           error = res.error;
           if (error) throw error;
