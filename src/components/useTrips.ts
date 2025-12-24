@@ -622,7 +622,25 @@ export function useTrips() {
       return { ...(updated || { id } as any), ...(v || {}) } as Vehicle;
     },
     deleteVehicle: async (id: string) => {
+      const v = vehicles.find((vv) => vv.id === id);
+      const userId = (user as any)?.id;
       if (supabase && online) {
+        try {
+          // remove fotos no storage (path direto e todas dentro da pasta do veículo)
+          const baseDir = userId ? `${userId}/vehicles/${id}` : null;
+          if (v?.photoPath) {
+            try { await supabase.storage.from('trip-photos').remove([v.photoPath]); } catch {}
+          }
+          if (baseDir) {
+            try {
+              const { data: files } = await supabase.storage.from('trip-photos').list(baseDir, { limit: 100 });
+              const toDelete = (files || []).map((f: any) => `${baseDir}/${f.name}`);
+              if (toDelete.length) {
+                await supabase.storage.from('trip-photos').remove(toDelete);
+              }
+            } catch {}
+          }
+        } catch {}
         await supabase.from("vehicles").delete().eq("id", id);
         setVehicles((prev) => prev.filter((vv) => vv.id !== id));
         saveCaches(trips, vehicles.filter((vv) => vv.id !== id));
