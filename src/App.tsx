@@ -105,8 +105,6 @@ export default function App() {
   const handleDeleteTripCascade = async (trip: Trip) => {
     const completed = (trip as any).trip_completed === true || (trip as any).status === 'completed';
     if (!completed) return; // apenas viagens encerradas
-    const pwd = window.prompt('Digite sua senha para confirmar a exclusão permanente:') || '';
-    if (!pwd) return;
     try {
       await deleteTripCascade(trip.id);
       await refresh();
