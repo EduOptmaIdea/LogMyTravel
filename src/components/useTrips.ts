@@ -310,31 +310,42 @@ export function useTrips() {
 
   const saveTrip = async (trip: any): Promise<Trip> => {
     if (supabase && online) {
-      const base = toSnakeTrip(trip);
-      const payloadBool = { ...base, trip_completed: !!trip.trip_completed, user_id: user?.id };
-      const payloadStr = { ...base, status: trip.trip_completed ? 'completed' : 'ongoing', user_id: user?.id };
-      let data: any | null = null;
-      let error: any | null = null;
       try {
-        ({ data, error } = await supabase.from("trips").insert([payloadBool]).select().single());
-        if (error) throw error;
+        const base = toSnakeTrip(trip);
+        const payloadBool = { ...base, trip_completed: !!trip.trip_completed, user_id: user?.id };
+        const payloadStr = { ...base, status: trip.trip_completed ? 'completed' : 'ongoing', user_id: user?.id };
+        let data: any | null = null;
+        let error: any | null = null;
+        try {
+          ({ data, error } = await supabase.from("trips").insert([payloadBool]).select().single());
+          if (error) throw error;
+        } catch {
+          const res = await supabase.from("trips").insert([payloadStr]).select().single();
+          data = res.data;
+          error = res.error;
+          if (error) throw error;
+        }
+        const mapped = mapRowToTrip(data);
+        setTrips((prev) => [mapped, ...prev]);
+        saveCaches([mapped, ...trips], vehicles);
+        return mapped;
       } catch {
-        const res = await supabase.from("trips").insert([payloadStr]).select().single();
-        data = res.data;
-        error = res.error;
-        if (error) throw error;
+        // fallback para fila offline
+        const localId = `local-${safeRandomUUID()}`;
+        const localTrip: Trip = { ...trip, id: localId };
+        setTrips((prev) => [localTrip, ...prev]);
+        enqueue({ kind: "trip_insert", localId, payload: trip });
+        saveCaches([localTrip, ...trips], vehicles);
+        return localTrip;
       }
-      const mapped = mapRowToTrip(data);
-      setTrips((prev) => [mapped, ...prev]);
-      saveCaches([mapped, ...trips], vehicles);
-      return mapped;
+    } else {
+      const localId = `local-${safeRandomUUID()}`;
+      const localTrip: Trip = { ...trip, id: localId };
+      setTrips((prev) => [localTrip, ...prev]);
+      enqueue({ kind: "trip_insert", localId, payload: trip });
+      saveCaches([localTrip, ...trips], vehicles);
+      return localTrip;
     }
-    const localId = `local-${safeRandomUUID()}`;
-    const localTrip: Trip = { ...trip, id: localId };
-    setTrips((prev) => [localTrip, ...prev]);
-    enqueue({ kind: "trip_insert", localId, payload: trip });
-    saveCaches([localTrip, ...trips], vehicles);
-    return localTrip;
   };
 
   const updateTrip = async (id: string, updates: Partial<Trip>): Promise<Trip> => {
@@ -519,23 +530,33 @@ export function useTrips() {
     saveStop, updateStop, deleteStop,
     saveVehicle: async (v: Omit<Vehicle, "id">): Promise<Vehicle> => {
       if (supabase && online) {
-        const { data, error } = await supabase
-          .from("vehicles")
-          .insert([{...v, user_id: user?.id}])
-          .select()
-          .single();
-        if (error) throw error;
-        const saved = data as Vehicle;
-        setVehicles((prev) => [saved, ...prev]);
-        saveCaches(trips, [saved, ...vehicles]);
-        return saved;
+        try {
+          const { data, error } = await supabase
+            .from("vehicles")
+            .insert([{...v, user_id: user?.id}])
+            .select()
+            .single();
+          if (error) throw error;
+          const saved = data as Vehicle;
+          setVehicles((prev) => [saved, ...prev]);
+          saveCaches(trips, [saved, ...vehicles]);
+          return saved;
+        } catch {
+          const localId = `local-${safeRandomUUID()}`;
+          const localV: Vehicle = { ...v, id: localId, syncStatus: 'pending' } as Vehicle;
+          setVehicles((prev) => [localV, ...prev]);
+          enqueue({ kind: "vehicle_insert", localId, payload: v });
+          saveCaches(trips, [localV, ...vehicles]);
+          return localV;
+        }
+      } else {
+        const localId = `local-${safeRandomUUID()}`;
+        const localV: Vehicle = { ...v, id: localId, syncStatus: 'pending' } as Vehicle;
+        setVehicles((prev) => [localV, ...prev]);
+        enqueue({ kind: "vehicle_insert", localId, payload: v });
+        saveCaches(trips, [localV, ...vehicles]);
+        return localV;
       }
-      const localId = `local-${safeRandomUUID()}`;
-      const localV: Vehicle = { ...v, id: localId, syncStatus: 'pending' } as Vehicle;
-      setVehicles((prev) => [localV, ...prev]);
-      enqueue({ kind: "vehicle_insert", localId, payload: v });
-      saveCaches(trips, [localV, ...vehicles]);
-      return localV;
     },
     updateVehicle: async (id: string, v: Partial<Vehicle>): Promise<Vehicle> => {
       if (supabase && online) {
