@@ -166,6 +166,7 @@ export default function App() {
               onAttachVehicleToTrip={linkVehicleToTrip}
               onDetachVehicleFromTrip={unlinkVehicleFromTrip}
               onRemoveVehicleFromTrip={unlinkAllVehiclesFromTrip}
+              refresh={refresh}
               onEdit={(trip) => {
                 setTripToEdit(trip);
                 setIsEditModalOpen(true);

@@ -171,6 +171,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     saveVehicle?: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle>;
     updateVehicle?: (id: string, updates: Partial<Vehicle>) => Promise<Vehicle>;
     updateTrip?: (id: string, updates: Partial<Trip>) => Promise<Trip>;
+    refresh?: () => Promise<void>;
   }
 
   export function OngoingTripView({
@@ -188,6 +189,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     saveVehicle: saveVehicleProp,
     updateVehicle: updateVehicleProp,
     updateTrip: updateTripProp,
+    refresh,
   }: OngoingTripViewProps) {
   // Preferir veículos vindos do App para evitar instância duplicada do hook
   const {
@@ -1525,15 +1527,22 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
             <React.Suspense
               fallback={<div className="p-4 text-center">Carregando...</div>}
             >
-              <TripEndModal
-                trip={selectedTrip}
-                onClose={() => {
-                  setShowEndModal(false);
-                  setIsEnding(false);
-                }}
+               <TripEndModal
+                 trip={selectedTrip}
+                 onClose={() => {
+                   setShowEndModal(false);
+                   setIsEnding(false);
+                 }}
                 onSave={async (updates) => {
                   const fn = updateTripProp ? updateTripProp : async (id: string, ups: Partial<Trip>) => Promise.resolve(ups as any);
                   await fn(selectedTrip.id, updates);
+                  if (refresh) {
+                    try { await refresh(); } catch {}
+                  }
+                  setSelectedTripId((prev) => {
+                    const ids = (trips || []).filter((t) => !(typeof (t as any).trip_completed === 'boolean' ? (t as any).trip_completed : ((t as any).status === 'completed'))).map((t) => t.id);
+                    return ids[0] || "";
+                  });
                 }}
               />
             </React.Suspense>
