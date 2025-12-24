@@ -194,9 +194,9 @@ export function useTrips() {
           const payloadStr = { ...base, status: item.payload.trip_completed ? 'completed' : 'ongoing', user_id: user.id };
           let data: any | null = null;
           try {
-            ({ data } = await supabase.from("trips").insert([payloadBool]).select().single());
+            ({ data } = await supabase.from("trips").insert([payloadBool]).select('*').single());
           } catch {
-            ({ data } = await supabase.from("trips").insert([payloadStr]).select().single());
+            ({ data } = await supabase.from("trips").insert([payloadStr]).select('*').single());
           }
           if (data?.id) {
             const mapped = mapRowToTrip(data);
@@ -209,19 +209,19 @@ export function useTrips() {
           const payloadStr = { ...base };
           if (typeof item.payload.trip_completed === 'boolean') payloadStr.status = item.payload.trip_completed ? 'completed' : 'ongoing';
           try {
-            await supabase.from("trips").update(payloadBool).eq("id", item.id);
+            await supabase.from("trips").update(payloadBool).eq("id", item.id).select('*');
           } catch {
-            await supabase.from("trips").update(payloadStr).eq("id", item.id);
+            await supabase.from("trips").update(payloadStr).eq("id", item.id).select('*');
           }
         } else if (item.kind === "trip_delete") {
           await supabase.from("trips").delete().eq("id", item.id);
         } else if (item.kind === "vehicle_insert") {
-          const { data } = await supabase.from("vehicles").insert([{ ...item.payload, user_id: user.id }]).select().single();
+          const { data } = await supabase.from("vehicles").insert([{ ...toSnakeVehicle(item.payload), user_id: user.id }]).select('*').single();
           if (data?.id) {
             setVehicles((prev) => prev.map((vv) => vv.id === item.localId ? { ...vv, id: data.id, syncStatus: 'synced' } : vv));
           }
         } else if (item.kind === "vehicle_update") {
-          await supabase.from("vehicles").update(item.payload).eq("id", item.id);
+          await supabase.from("vehicles").update(toSnakeVehicle(item.payload)).eq("id", item.id).select('*');
         } else if (item.kind === "vehicle_delete") {
           await supabase.from("vehicles").delete().eq("id", item.id);
         }
@@ -317,14 +317,14 @@ export function useTrips() {
         let data: any | null = null;
         let error: any | null = null;
         try {
-          ({ data, error } = await supabase.from("trips").insert([payloadBool]).select().single());
-          if (error) throw error;
-        } catch {
-          const res = await supabase.from("trips").insert([payloadStr]).select().single();
-          data = res.data;
-          error = res.error;
-          if (error) throw error;
-        }
+        ({ data, error } = await supabase.from("trips").insert([payloadBool]).select('*').single());
+        if (error) throw error;
+      } catch {
+        const res = await supabase.from("trips").insert([payloadStr]).select('*').single();
+        data = res.data;
+        error = res.error;
+        if (error) throw error;
+      }
         const mapped = mapRowToTrip(data);
         setTrips((prev) => [mapped, ...prev]);
         saveCaches([mapped, ...trips], vehicles);
@@ -425,10 +425,10 @@ export function useTrips() {
       let data: any | null = null;
       let error: any | null = null;
       try {
-        ({ data, error } = await supabase.from("trips").update(payloadBool).eq("id", id).select().single());
+        ({ data, error } = await supabase.from("trips").update(payloadBool).eq("id", id).select('*').single());
         if (error) throw error;
       } catch {
-        const res = await supabase.from("trips").update(payloadStr).eq("id", id).select().single();
+        const res = await supabase.from("trips").update(payloadStr).eq("id", id).select('*').single();
         data = res.data;
         error = res.error;
         if (error) throw error;
@@ -577,7 +577,7 @@ export function useTrips() {
           const { data, error } = await supabase
             .from("vehicles")
             .insert([{...toSnakeVehicle(v), user_id: user?.id}])
-            .select()
+            .select('*')
             .single();
           if (error) throw error;
           const saved = mapRowToVehicle(data);
@@ -607,7 +607,7 @@ export function useTrips() {
           .from("vehicles")
           .update(toSnakeVehicle(v))
           .eq("id", id)
-          .select()
+          .select('*')
           .single();
         if (error) throw error;
         const updated = mapRowToVehicle(data);
