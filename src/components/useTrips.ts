@@ -438,24 +438,9 @@ export function useTrips() {
       return out;
     };
     const base = toSnake(updates as Record<string, any>);
-    const payloadBool = { ...base };
-    if (typeof updates.trip_completed === 'boolean') payloadBool.trip_completed = updates.trip_completed;
-    const payloadStr = { ...base };
-    if (typeof updates.trip_completed === 'boolean') payloadStr.status = updates.trip_completed ? 'completed' : 'ongoing';
     if (supabase && online) {
-      let data: any | null = null;
-      let error: any | null = null;
-      try {
-        ({ data, error } = await supabase.from("trips").update(payloadBool).eq("id", id).select('*').single());
-        if (error) throw error;
-      } catch {
-        const retryPayload = { ...payloadStr };
-        delete (retryPayload as any).is_driving;
-        const res = await supabase.from("trips").update(retryPayload).eq("id", id).select('*').single();
-        data = res.data;
-        error = res.error;
-        if (error) throw error;
-      }
+      const { data, error } = await supabase.from("trips").update(base).eq("id", id).select('*').single();
+      if (error) throw error;
       setTrips((prev) => prev.map((t) => t.id === id ? { ...t, ...updates } : t));
       return data as Trip;
     }
