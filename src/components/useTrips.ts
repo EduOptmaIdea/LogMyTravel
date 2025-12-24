@@ -14,6 +14,7 @@ export interface Trip {
   startKm?: number | null;
   endKm?: number | null;
   trip_completed: boolean;
+  isDriving?: boolean;
   hasVehicle?: boolean;
   vehicleIds?: string[];
   arrivalLocation?: string;
@@ -196,7 +197,9 @@ export function useTrips() {
           try {
             ({ data } = await supabase.from("trips").insert([payloadBool]).select('*').single());
           } catch {
-            ({ data } = await supabase.from("trips").insert([payloadStr]).select('*').single());
+            const retryPayload = { ...payloadStr };
+            delete (retryPayload as any).is_driving;
+            ({ data } = await supabase.from("trips").insert([retryPayload]).select('*').single());
           }
           if (data?.id) {
             const mapped = mapRowToTrip(data);
@@ -211,7 +214,9 @@ export function useTrips() {
           try {
             await supabase.from("trips").update(payloadBool).eq("id", item.id).select('*');
           } catch {
-            await supabase.from("trips").update(payloadStr).eq("id", item.id).select('*');
+            const retryPayload = { ...payloadStr };
+            delete (retryPayload as any).is_driving;
+            await supabase.from("trips").update(retryPayload).eq("id", item.id).select('*');
           }
         } else if (item.kind === "trip_delete") {
           await supabase.from("trips").delete().eq("id", item.id);
@@ -277,6 +282,7 @@ export function useTrips() {
       arrivalTime: "arrival_time",
       details: "details",
       trip_completed: "trip_completed",
+      isDriving: "is_driving",
       name: "name",
     };
     const out: Record<string, any> = {};
@@ -299,6 +305,7 @@ export function useTrips() {
     trip_completed: typeof row.trip_completed === 'boolean'
       ? row.trip_completed
       : (typeof row.status === 'boolean' ? row.status : row.status === 'completed'),
+    isDriving: typeof row.is_driving === 'boolean' ? row.is_driving : undefined,
     hasVehicle: row.has_vehicle,
     vehicleIds: row.vehicle_ids,
     arrivalLocation: row.arrival_location ?? undefined,
@@ -312,19 +319,22 @@ export function useTrips() {
     if (supabase && online) {
       try {
         const base = toSnakeTrip(trip);
-        const payloadBool = { ...base, trip_completed: !!trip.trip_completed, user_id: user?.id };
+        const payloadBool = { ...base, trip_completed: !!trip.trip_completed, is_driving: !!trip.isDriving, user_id: user?.id };
         const payloadStr = { ...base, status: trip.trip_completed ? 'completed' : 'ongoing', user_id: user?.id };
         let data: any | null = null;
         let error: any | null = null;
         try {
-        ({ data, error } = await supabase.from("trips").insert([payloadBool]).select('*').single());
-        if (error) throw error;
-      } catch {
-        const res = await supabase.from("trips").insert([payloadStr]).select('*').single();
-        data = res.data;
-        error = res.error;
-        if (error) throw error;
-      }
+          ({ data, error } = await supabase.from("trips").insert([payloadBool]).select('*').single());
+          if (error) throw error;
+        } catch {
+          // Remover campos não existentes e tentar novamente
+          const retryPayload = { ...payloadStr };
+          delete (retryPayload as any).is_driving;
+          const res = await supabase.from("trips").insert([payloadStr]).select('*').single();
+          data = res.data;
+          error = res.error;
+          if (error) throw error;
+        }
         const mapped = mapRowToTrip(data);
         setTrips((prev) => [mapped, ...prev]);
         saveCaches([mapped, ...trips], vehicles);
@@ -407,6 +417,7 @@ export function useTrips() {
         arrivalCoords: "arrival_coords",
         arrivalDate: "arrival_date",
         arrivalTime: "arrival_time",
+        isDriving: "is_driving",
         trip_completed: "trip_completed",
       };
       const out: Record<string, any> = {};
@@ -428,7 +439,9 @@ export function useTrips() {
         ({ data, error } = await supabase.from("trips").update(payloadBool).eq("id", id).select('*').single());
         if (error) throw error;
       } catch {
-        const res = await supabase.from("trips").update(payloadStr).eq("id", id).select('*').single();
+        const retryPayload = { ...payloadStr };
+        delete (retryPayload as any).is_driving;
+        const res = await supabase.from("trips").update(retryPayload).eq("id", id).select('*').single();
         data = res.data;
         error = res.error;
         if (error) throw error;

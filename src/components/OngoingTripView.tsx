@@ -1166,9 +1166,9 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                     const v = getVehicleById(vid);
                     const warning = getRodizioWarning(v?.licensePlate || null);
                     const s = perVehicleStats.get(vid);
-                    const initial = Math.round(s?.initial ?? 0);
-                    const current = Math.round(s?.current ?? initial);
-                    const total = Math.round(s?.total ?? 0);
+                    const initial = Number((s?.initial ?? 0).toFixed(1));
+                    const current = Number((s?.current ?? initial).toFixed(1));
+                    const total = Number((s?.total ?? 0).toFixed(1));
                     return (
                       <div key={vid} className="space-y-1">
                         {/* Linha superior: foto | nome (link) | botões */}
@@ -1490,7 +1490,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                         )}
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-sm font-semibold text-gray-900">{`${e.cumulativeKm} km`}</span>
+                        <span className="text-sm font-semibold text-gray-900">{`${Number(e.cumulativeKm || 0).toFixed(1)} km`}</span>
                         {null /* badge removido por sobreposição visual */}
                         <button title="Editar" className="text-gray-600 hover:text-gray-900" onClick={() => {
                           // Permitir editar sempre, mesmo sem veículo vinculado.
@@ -1621,8 +1621,16 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
               <Input
                 type="text"
                 value={attachOdometer}
-                onChange={(e) => setAttachOdometer(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="Ex: 12345"
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                  // normaliza: usa vírgula como separador visual, limita a uma casa
+                  const parts = raw.replace(/\./g, ',').split(',');
+                  const head = parts[0].replace(/^0+(?=\d)/, '') || '0';
+                  const tail = (parts[1] || '').slice(0, 1);
+                  const next = parts.length > 1 ? `${head},${tail}` : head;
+                  setAttachOdometer(next);
+                }}
+                placeholder="Ex: 1516,2"
                 className="w-full"
               />
               </div>
@@ -1635,18 +1643,19 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                 >Cancelar</Button>
                 <Button
                   onClick={async () => {
-                    const kmNum = Number(attachOdometer);
+                    const kmNum = Number(String(attachOdometer).replace(/\./g, '').replace(',', '.'));
                     if (!vehicleToAttachId) {
                       toast.error("Selecione um veículo.");
                       return;
                     }
-                    if (isNaN(kmNum) || kmNum < 0) {
+                    const kmOne = Number.isNaN(kmNum) ? NaN : Number(kmNum.toFixed(1));
+                    if (isNaN(kmOne) || kmOne < 0) {
                       toast.error("Informe um odômetro válido.");
                       return;
                     }
                     try {
                       // Vincula veículo à viagem com KM inicial
-                      onAttachVehicleToTrip?.(selectedTrip.id, vehicleToAttachId, kmNum);
+                      onAttachVehicleToTrip?.(selectedTrip.id, vehicleToAttachId, kmOne);
                       // Cria segmento inicial
                       const today = new Date();
                       const yyyy = today.getFullYear();
@@ -1657,8 +1666,8 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                         tripId: selectedTrip.id,
                         vehicleId: vehicleToAttachId,
                         segmentDate: dateStr,
-                        initialKm: Math.round(kmNum),
-                        currentKm: Math.round(kmNum),
+                        initialKm: kmOne,
+                        currentKm: kmOne,
                       });
                       // Cria parada automática "Início"
                       const timeStr = new Date().toTimeString().slice(0, 5);
