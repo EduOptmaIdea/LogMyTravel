@@ -244,7 +244,13 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
   const listRefVehicles = React.useRef<HTMLDivElement | null>(null);
   const [showDeleteStopConfirm, setShowDeleteStopConfirm] = useState(false);
   const [stopToDelete, setStopToDelete] = useState<any | null>(null);
-  const [isDriving, setIsDriving] = useState(false);
+  const deriveIsDriving = (t: any): boolean => {
+    if (!t) return false;
+    if (typeof t.isDriving === 'boolean') return t.isDriving;
+    if (typeof t.is_driving === 'boolean') return t.is_driving;
+    return Boolean(t.isDriving || t.is_driving);
+  };
+  const isDriving = deriveIsDriving(selectedTrip);
   const [segments, setSegments] = useState<TripVehicleSegment[]>([]);
   const [initialKmInputs, setInitialKmInputs] = useState<Record<string, string>>({});
   const [isEnding, setIsEnding] = useState(false);
@@ -327,16 +333,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     sortedTrips.find((t) => t.id === selectedTripId) ||
     sortedTrips[0];
 
-  // Sincroniza o toggle "Vai dirigir" com o dado da viagem selecionada (camelCase/snake_case)
-  useEffect(() => {
-    const deriveIsDriving = (t: any): boolean => {
-      if (!t) return false;
-      if (typeof t.isDriving === 'boolean') return t.isDriving;
-      if (typeof t.is_driving === 'boolean') return t.is_driving;
-      return Boolean(t.isDriving || t.is_driving);
-    };
-    setIsDriving(deriveIsDriving(selectedTrip));
-  }, [selectedTrip?.id, (selectedTrip as any)?.isDriving, (selectedTrip as any)?.is_driving, trips]);
+  // remover estado local: derivar sempre do objeto da viagem
 
   // Calcular duração corrigida - formato: "X dias, Y horas e Z minutos"
   const getDuration = () => {
@@ -1130,13 +1127,10 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                        toast.error(
                          "Não é possível mudar esta viagem para trechos sem veículos a dirigir, pois existem paradas registradas com veículos vinculados. Para essa alteração, modifique a condição das paradas para ‘Dirigindo: Não’ e refaça esta ação."
                        );
-                       // Reverter o toggle visual
-                       setIsDriving(true);
                        return;
                      }
                    }
 
-                   setIsDriving(val);
                    // Persistir estado na viagem (Supabase ou localStorage via hook) e atualizar visão
                    (updateTripProp ? updateTripProp : async (id: string, updates: Partial<Trip>) => Promise.resolve(updates as any))(selectedTrip.id, { isDriving: val })
                      .then(async () => {
