@@ -85,14 +85,20 @@ export default function App() {
   }, []);
 
   const handleSaveNewTrip = async (tripData: any) => {
-    if (!user) return setActiveView("login");
     try {
       const saved = await saveTrip(tripData);
       setSelectedOngoingTripId(saved.id);
       setActiveView("ongoing-trip");
       await refresh();
+      toast.success("Viagem criada.");
     } catch (e) {
-      toast.error("Erro ao salvar viagem.");
+      toast.error("Erro ao salvar viagem. Salva localmente para sincronizar depois.");
+      try {
+        const saved = await saveTrip(tripData);
+        setSelectedOngoingTripId(saved.id);
+        setActiveView("ongoing-trip");
+        await refresh();
+      } catch {}
     }
   };
 
