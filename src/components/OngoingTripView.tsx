@@ -327,10 +327,16 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     sortedTrips.find((t) => t.id === selectedTripId) ||
     sortedTrips[0];
 
-  // Sincroniza o toggle "Vai dirigir" com o dado da viagem selecionada
+  // Sincroniza o toggle "Vai dirigir" com o dado da viagem selecionada (camelCase/snake_case)
   useEffect(() => {
-    setIsDriving(Boolean(selectedTrip?.isDriving));
-  }, [selectedTrip?.id, selectedTrip?.isDriving]);
+    const deriveIsDriving = (t: any): boolean => {
+      if (!t) return false;
+      if (typeof t.isDriving === 'boolean') return t.isDriving;
+      if (typeof t.is_driving === 'boolean') return t.is_driving;
+      return Boolean(t.isDriving || t.is_driving);
+    };
+    setIsDriving(deriveIsDriving(selectedTrip));
+  }, [selectedTrip?.id, (selectedTrip as any)?.isDriving, (selectedTrip as any)?.is_driving, trips]);
 
   // Calcular duração corrigida - formato: "X dias, Y horas e Z minutos"
   const getDuration = () => {
