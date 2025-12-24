@@ -129,13 +129,14 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
     }
 
     try {
+      const detailsOut = isCompleting ? (finalDetails || details) : details;
       await onSave({
         name,
         departureLocation,
         departureCoords,
         departureDate: formattedDepartureDate,
         departureTime,
-        details,
+        details: detailsOut,
         ...(isCompleting && {
           arrivalLocation: sameLocation ? departureLocation : arrivalLocation,
           arrivalCoords: sameLocation ? departureCoords : arrivalCoords,
@@ -151,7 +152,6 @@ export function TripEditModal({ trip, onSave, onClose }: TripEditModalProps) {
               arrivalCoords: null,
               arrivalDate: null as any,
               arrivalTime: null as any,
-              finalDetails: "",
             }),
       });
       onClose();
