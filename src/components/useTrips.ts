@@ -519,7 +519,6 @@ export function useTrips() {
         reasons: "reasons",
         otherReason: "other_reason",
         cost: "cost",
-        costDetails: "cost_details",
         notes: "notes",
         photoUrls: "photo_urls",
         tankFull: "tank_full",
@@ -675,7 +674,12 @@ export function useTrips() {
     },
     linkVehicleToTrip: async (tId: string, vId: string, startKm?: number | null) => {
       if (supabase && online) {
-        await supabase.from("trip_vehicles").insert([{ trip_id: tId, vehicle_id: vId, initial_km: toDbKm(startKm ?? null), user_id: user?.id }]);
+        await supabase
+          .from("trip_vehicles")
+          .upsert(
+            [{ trip_id: tId, vehicle_id: vId, initial_km: toDbKm(startKm ?? null), user_id: user?.id }],
+            { onConflict: "trip_id,vehicle_id", ignoreDuplicates: true }
+          );
         return;
       }
       enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: (trips.find(t => t.id === tId)?.vehicleIds || []).concat([vId]) } });
@@ -743,7 +747,7 @@ export function useTrips() {
       const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       await supabase
         .from("trip_vehicle_segments")
-        .insert([{ trip_id: tripId, vehicle_id: vehicleId, current_km: toDbKm(value), segment_date: dateStr }]);
+        .insert([{ trip_id: tripId, vehicle_id: vehicleId, current_km: toDbKm(value), segment_date: dateStr, user_id: user?.id }]);
     },
     saveTripVehicleSegment: async (payload: { tripId: string; vehicleId: string; initialKm?: number | null; currentKm?: number | null; segmentDate?: string | null }): Promise<Segment | null> => {
       if (!supabase) return null;
@@ -753,6 +757,7 @@ export function useTrips() {
         initial_km: toDbKm(payload.initialKm ?? null),
         current_km: toDbKm(payload.currentKm ?? null),
         segment_date: payload.segmentDate ?? null,
+        user_id: user?.id,
       };
       const { data, error } = await supabase
         .from("trip_vehicle_segments")
