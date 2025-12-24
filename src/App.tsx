@@ -77,16 +77,8 @@ export default function App() {
     if (!supabase) return;
     const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        try { localStorage.clear(); } catch {}
-        try { sessionStorage.clear(); } catch {}
-        try {
-          if ('caches' in window) {
-            caches.keys().then((keys) => keys.forEach((k) => { try { caches.delete(k); } catch {} }));
-          }
-        } catch {}
         setActiveView('login');
-        try { window.location.replace('/'); } catch {}
-        try { setTimeout(() => { try { window.location.reload(); } catch {} }, 50); } catch {}
+        try { toast.warning("Sessão encerrada. Faça login novamente."); } catch {}
       }
     });
     return () => subscription?.subscription?.unsubscribe();
