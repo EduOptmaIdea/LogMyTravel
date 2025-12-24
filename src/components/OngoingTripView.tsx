@@ -194,6 +194,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
   // Preferir veículos vindos do App para evitar instância duplicada do hook
   const {
     vehicles: vehiclesFromHook,
+    updateTrip: hookUpdateTrip,
     saveStop,
     updateStop,
     deleteStop,
@@ -1527,14 +1528,14 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
             <React.Suspense
               fallback={<div className="p-4 text-center">Carregando...</div>}
             >
-               <TripEndModal
-                 trip={selectedTrip}
-                 onClose={() => {
-                   setShowEndModal(false);
-                   setIsEnding(false);
-                 }}
+              <TripEndModal
+                trip={selectedTrip}
+                onClose={() => {
+                  setShowEndModal(false);
+                  setIsEnding(false);
+                }}
                 onSave={async (updates) => {
-                  const fn = updateTripProp ? updateTripProp : async (id: string, ups: Partial<Trip>) => Promise.resolve(ups as any);
+                  const fn = updateTripProp ? updateTripProp : (hookUpdateTrip || (async (id: string, ups: Partial<Trip>) => Promise.resolve(ups as any)));
                   await fn(selectedTrip.id, updates);
                   if (refresh) {
                     try { await refresh(); } catch {}

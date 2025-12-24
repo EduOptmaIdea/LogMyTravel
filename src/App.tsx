@@ -161,6 +161,7 @@ export default function App() {
             <OngoingTripView
               trips={ongoingTrips}
               vehicles={vehicles}
+              updateTrip={updateTrip}
               onUpdateKm={(id, km) => updateTrip(id, { endKm: km })}
               onUpdateStartKm={(id, km) => updateTrip(id, { startKm: km })}
               onAttachVehicleToTrip={linkVehicleToTrip}
