@@ -253,7 +253,10 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     if (typeof t.is_driving === 'boolean') return t.is_driving;
     return Boolean(t.isDriving || t.is_driving);
   };
-  const isDriving = deriveIsDriving(selectedTrip);
+  const [isDriving, setIsDriving] = useState<boolean>(deriveIsDriving(selectedTrip));
+  useEffect(() => {
+    setIsDriving(deriveIsDriving(selectedTrip));
+  }, [selectedTrip?.id, (selectedTrip as any)?.isDriving, (selectedTrip as any)?.is_driving]);
   const [segments, setSegments] = useState<TripVehicleSegment[]>([]);
   const [initialKmInputs, setInitialKmInputs] = useState<Record<string, string>>({});
   const [isEnding, setIsEnding] = useState(false);
@@ -1132,6 +1135,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                      }
                    }
 
+                   setIsDriving(val);
                    // Persistir estado na viagem (Supabase ou localStorage via hook) e atualizar visão
                    (updateTripProp ? updateTripProp : async (id: string, updates: Partial<Trip>) => Promise.resolve(updates as any))(selectedTrip.id, { isDriving: val })
                      .then(async () => {
