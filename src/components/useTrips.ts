@@ -91,6 +91,16 @@ export function useTrips() {
     writeQueue(items);
   };
 
+  // KM helpers: store scaled int in DB, show with one decimal in UI
+  const toDbKm = (v: number | null | undefined): number | null => {
+    if (typeof v !== "number" || isNaN(v)) return null;
+    return Math.round(v * 10);
+  };
+  const fromDbKm = (v: number | null | undefined): number | null => {
+    if (typeof v !== "number" || isNaN(v)) return null;
+    return Number((v / 10).toFixed(1));
+  };
+
   const saveCaches = (t: Trip[], v: Vehicle[]) => {
     try { localStorage.setItem(TRIPS_CACHE, JSON.stringify(t)); } catch {}
     try { localStorage.setItem(VEHICLES_CACHE, JSON.stringify(v)); } catch {}
@@ -665,7 +675,7 @@ export function useTrips() {
     },
     linkVehicleToTrip: async (tId: string, vId: string, startKm?: number | null) => {
       if (supabase && online) {
-        await supabase.from("trip_vehicles").insert([{ trip_id: tId, vehicle_id: vId, initial_km: startKm ?? null, user_id: user?.id }]);
+        await supabase.from("trip_vehicles").insert([{ trip_id: tId, vehicle_id: vId, initial_km: toDbKm(startKm ?? null), user_id: user?.id }]);
         return;
       }
       enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: (trips.find(t => t.id === tId)?.vehicleIds || []).concat([vId]) } });
@@ -700,8 +710,8 @@ export function useTrips() {
           id: row.id,
           tripId: row.trip_id,
           vehicleId: row.vehicle_id,
-          initialKm: row.initial_km ?? null,
-          currentKm: row.current_km ?? null,
+          initialKm: fromDbKm(row.initial_km ?? null),
+          currentKm: fromDbKm(row.current_km ?? null),
           segmentDate: row.segment_date ?? null,
           created_at: row.created_at ?? null,
         })) ?? [];
@@ -722,7 +732,7 @@ export function useTrips() {
       if (!supabase) return;
       await supabase
         .from("trip_vehicles")
-        .update({ initial_km: value })
+        .update({ initial_km: toDbKm(value) })
         .eq("trip_id", tripId)
         .eq("vehicle_id", vehicleId);
     },
@@ -733,15 +743,15 @@ export function useTrips() {
       const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       await supabase
         .from("trip_vehicle_segments")
-        .insert([{ trip_id: tripId, vehicle_id: vehicleId, current_km: value, segment_date: dateStr }]);
+        .insert([{ trip_id: tripId, vehicle_id: vehicleId, current_km: toDbKm(value), segment_date: dateStr }]);
     },
     saveTripVehicleSegment: async (payload: { tripId: string; vehicleId: string; initialKm?: number | null; currentKm?: number | null; segmentDate?: string | null }): Promise<Segment | null> => {
       if (!supabase) return null;
       const insert = {
         trip_id: payload.tripId,
         vehicle_id: payload.vehicleId,
-        initial_km: payload.initialKm ?? null,
-        current_km: payload.currentKm ?? null,
+        initial_km: toDbKm(payload.initialKm ?? null),
+        current_km: toDbKm(payload.currentKm ?? null),
         segment_date: payload.segmentDate ?? null,
       };
       const { data, error } = await supabase
@@ -754,8 +764,8 @@ export function useTrips() {
         id: data.id,
         tripId: data.trip_id,
         vehicleId: data.vehicle_id,
-        initialKm: data.initial_km ?? null,
-        currentKm: data.current_km ?? null,
+        initialKm: fromDbKm(data.initial_km ?? null),
+        currentKm: fromDbKm(data.current_km ?? null),
         segmentDate: data.segment_date ?? null,
         created_at: data.created_at ?? null,
       };
