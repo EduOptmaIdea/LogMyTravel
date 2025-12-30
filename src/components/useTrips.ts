@@ -141,6 +141,7 @@ export function useTrips() {
           trip_completed: typeof row.trip_completed === 'boolean'
             ? row.trip_completed
             : (typeof row.status === 'boolean' ? row.status : row.status === 'completed'),
+          isDriving: !!row.is_driving,
           hasVehicle: row.has_vehicle,
           vehicleIds: row.vehicle_ids,
           arrivalLocation: row.arrival_location ?? undefined,
