@@ -518,7 +518,7 @@ export function useTrips() {
     };
     if (supabase && online) {
       const payload = { ...toSnake(stop), user_id: user?.id };
-      const { data, error } = await supabase.from("stops").insert([payload]).select().single();
+      const { data, error } = await supabase.from("stops").insert([payload]).select('*').single();
       if (error) throw error;
       return data;
     }
@@ -559,7 +559,7 @@ export function useTrips() {
     };
     if (supabase && online) {
       const payload = toSnake(updates);
-      const { data, error } = await supabase.from("stops").update(payload).eq("id", id).select().single();
+      const { data, error } = await supabase.from("stops").update(payload).eq("id", id).select('*').single();
       if (error) throw error;
       return data;
     }

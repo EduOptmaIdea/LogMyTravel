@@ -1696,7 +1696,6 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                         reasons: [],
                         otherReason: undefined,
                         cost: 0,
-                        costDetails: [ { category: 'other', amount: 0, note: 'Aluguel de veículo' } ],
                         notes: `Início da viagem`,
                         photoUrls: [],
                       } as any;
