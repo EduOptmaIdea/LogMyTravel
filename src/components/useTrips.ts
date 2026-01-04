@@ -659,6 +659,8 @@ export function useTrips() {
       saveCaches(trips, vehicles.filter((vv) => vv.id !== id));
     },
     linkVehicleToTrip: async (tId: string, vId: string, startKm?: number | null) => {
+      const currentTrip = trips.find((t) => t.id === tId);
+      const newIds = Array.from(new Set([...(currentTrip?.vehicleIds || []), vId]));
       if (supabase && online) {
         await supabase
           .from("trip_vehicles")
@@ -666,24 +668,28 @@ export function useTrips() {
             [{ trip_id: tId, vehicle_id: vId, initial_km: toDbKm(startKm ?? null), user_id: user?.id }],
             { onConflict: "trip_id,vehicle_id", ignoreDuplicates: true }
           );
+        await updateTrip(tId, { vehicleIds: newIds, hasVehicle: true });
         return;
       }
-      enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: (trips.find(t => t.id === tId)?.vehicleIds || []).concat([vId]) } });
+      enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: newIds, hasVehicle: true } });
     },
     unlinkVehicleFromTrip: async (tId: string, vId: string) => {
+      const cur = trips.find((t) => t.id === tId)?.vehicleIds || [];
+      const next = cur.filter((id) => id !== vId);
       if (supabase && online) {
         await supabase.from("trip_vehicles").delete().eq("trip_id", tId).eq("vehicle_id", vId);
+        await updateTrip(tId, { vehicleIds: next, hasVehicle: next.length > 0 });
         return;
       }
-      const cur = trips.find((t) => t.id === tId)?.vehicleIds || [];
-      enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: cur.filter((id) => id !== vId) } });
+      enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: next, hasVehicle: next.length > 0 } });
     },
     unlinkAllVehiclesFromTrip: async (tId: string) => {
       if (supabase && online) {
         await supabase.from("trip_vehicles").delete().eq("trip_id", tId);
+        await updateTrip(tId, { vehicleIds: [], hasVehicle: false });
         return;
       }
-      enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: [] } });
+      enqueue({ kind: "trip_update", id: tId, payload: { vehicleIds: [], hasVehicle: false } });
     },
     ensureVehicleSynced: async () => true,
     reopenTrip,
