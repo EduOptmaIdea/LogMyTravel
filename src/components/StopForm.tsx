@@ -9,6 +9,8 @@ interface LocationData {
   longitude: number;
 }
 
+import type { Vehicle } from './useTrips';
+
 interface StopFormProps {
   tripId: string;
   currentKm?: number; // KM atual da viagem (para sugerir como KM de chegada)
@@ -22,12 +24,13 @@ interface StopFormProps {
   // Dados da parada anterior para calcular tempo até a chegada
   previousStopDepartureDate?: string;
   previousStopDepartureTime?: string;
+  vehiclesList?: Vehicle[]; // lista de veículos para vincular ao trecho
 }
 
 type ExpenseCategory = 'fuel' | 'food' | 'lodging' | 'workshop' | 'other';
 interface ExpenseItem { category: ExpenseCategory; amount: number; note?: string }
 
-export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, initialData, initialIsDriving = false, previousKm, vehicleInUseName, previousStopDepartureDate, previousStopDepartureTime }: StopFormProps) {
+export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, initialData, initialIsDriving = false, previousKm, vehicleInUseName, previousStopDepartureDate, previousStopDepartureTime, vehiclesList = [] }: StopFormProps) {
   const now = new Date();
   
   // Estado do formulário
@@ -38,7 +41,8 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
   const [placeDetail, setPlaceDetail] = useState<string>(initialData?.placeDetail || '');
   const [stopType, setStopType] = useState<'stop' | 'destination'>(initialData?.stopType || 'stop');
   // Simplificação: quando a viagem não está em "Vai dirigir", forçar wasDriving=false
-  const [wasDriving, setWasDriving] = useState<boolean>(initialIsDriving ? Boolean(initialData?.wasDriving ?? initialIsDriving) : false);
+  const [wasDriving, setWasDriving] = useState<boolean>(Boolean(initialData?.wasDriving ?? initialIsDriving));
+  const [vehicleId, setVehicleId] = useState<string | null>(initialData?.vehicleId ?? null);
   const [arrivalKm, setArrivalKm] = useState<string>(initialData?.arrivalKm?.toString() || currentKm?.toString() || '');
   const [departureKm, setDepartureKm] = useState<string>(initialData?.departureKm?.toString() || initialData?.arrivalKm?.toString() || currentKm?.toString() || '');
   const [arrivalDate, setArrivalDate] = useState(initialData?.arrivalDate || now.toLocaleDateString('pt-BR').split('/').reverse().join('-'));
@@ -207,6 +211,7 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
       name: name.trim(),
       stopType,
       wasDriving,
+      vehicleId: wasDriving ? vehicleId || undefined : undefined,
       location,
       // Não enviar mais "place"; usar somente "name" e "placeDetail"
       placeDetail: placeDetail.trim() || undefined,
@@ -320,7 +325,7 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
                 </button>
               </div>
             </div>
-            {initialIsDriving && (
+            {true && (
               <div>
                 <label className="block text-xs text-gray-500 mb-1 font-medium">Dirigindo?</label>
                 <div className="flex items-center gap-2">
@@ -338,9 +343,19 @@ export function StopForm({ tripId, currentKm, onSave, onDepartNow, onCancel, ini
               </div>
             )}
           </div>
-          {wasDriving && vehicleInUseName && (
+          {wasDriving && (
             <div className="mt-2 text-xs text-gray-700">
-              Veículo desta viagem: <span className="font-semibold">{vehicleInUseName}</span>
+              <label className="block text-xs text-gray-500 mb-1 font-medium">Veículo do trecho</label>
+              <select
+                value={vehicleId || ''}
+                onChange={(e) => setVehicleId(e.target.value || null)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+              >
+                <option value="">Selecione um veículo</option>
+                {(vehiclesList || []).map((v) => (
+                  <option key={v.id} value={v.id}>{v.nickname || v.licensePlate || v.id}</option>
+                ))}
+              </select>
             </div>
           )}
         </div>

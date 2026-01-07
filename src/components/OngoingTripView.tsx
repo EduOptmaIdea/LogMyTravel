@@ -554,10 +554,17 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
   };
 
   // Lista de paradas com cálculo de "Km até a parada" = acumulado dos deltas de chegada + variação da parada anterior
+  const [stopFilter, setStopFilter] = useState<'all' | 'driving' | 'not_driving'>('all');
   const stopEntries = useMemo(() => {
     const stops = [...(selectedTrip?.stops || [])];
+    // Filtro por dirigir / não dirigir
+    const filtered = stops.filter((s) => {
+      if (stopFilter === 'driving') return Boolean(s.wasDriving);
+      if (stopFilter === 'not_driving') return !Boolean(s.wasDriving);
+      return true;
+    });
     // Ordenar por data/hora de chegada (se disponível), fallback created_at
-    stops.sort((a, b) => {
+    filtered.sort((a, b) => {
       const parse = (s: any) => {
         const d = s.arrivalDate;
         const t = s.arrivalTime;
@@ -577,7 +584,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
     let prevKm = initialKmBase;
     let cumulativeSoFar = 0;
     let lastVariation = 0; // variação da parada anterior (saída - chegada)
-    return stops.map((s, idx) => {
+    return filtered.map((s, idx) => {
       const arr = typeof s.arrivalKm === 'number' ? s.arrivalKm : prevKm;
       const dep = typeof s.departureKm === 'number' ? s.departureKm : null;
       const distanceToStop = idx === 0 ? 0 : Math.max(0, (typeof arr === 'number' ? arr : prevKm) - (prevKm ?? initialKmBase));
@@ -598,7 +605,7 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
         raw: s,
       };
     });
-  }, [selectedTrip?.stops, selectedTrip?.startKm, selectedTrip?.vehicleIds, perVehicleStats]);
+  }, [selectedTrip?.stops, selectedTrip?.startKm, selectedTrip?.vehicleIds, perVehicleStats, stopFilter]);
   // Calcula o KM anterior para um stop específico (ou para nova parada)
   const computePreviousKmForStop = (targetStopId?: string | null): number => {
     const stops = [...(selectedTrip?.stops || [])];
@@ -984,12 +991,12 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
                 <StopForm
                   tripId={selectedTrip.id}
                   currentKm={currentKm}
-                  initialIsDriving={isDriving}
+                  initialIsDriving={false}
                   initialData={editingStop || undefined}
                   previousKm={computePreviousKmForStop(editingStop?.id ?? null)}
                   previousStopDepartureDate={computePreviousDepartureForStop(editingStop?.id ?? null).date}
                   previousStopDepartureTime={computePreviousDepartureForStop(editingStop?.id ?? null).time}
-                  vehicleInUseName={(selectedTrip.vehicleIds?.[0] ? (getVehicleById(selectedTrip.vehicleIds[0])?.nickname ?? '') : undefined)}
+                  vehiclesList={vehicles}
                   onSave={async (stopData) => {
                     try {
                       const saved = editingStop?.id
@@ -1118,44 +1125,10 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
             },
             () => { setShowDeleteVehicleConfirm(false); setVehicleToDeleteId(null); }
           )}
-          <div className="border-t border-gray-200 pt-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Vai dirigir nesta viagem?</span>
-              <Switch
-                checked={isDriving}
-                onCheckedChange={(val) => {
-                   // Bloquear mudança para false se houver paradas com Dirigindo=true
-                   if (!val) {
-                     const hasDrivingStops = (selectedTrip?.stops || []).some((s: any) => Boolean(s.wasDriving));
-                     if (hasDrivingStops) {
-                       toast.error(
-                         "Não é possível mudar esta viagem para trechos sem veículos a dirigir, pois existem paradas registradas com veículos vinculados. Para essa alteração, modifique a condição das paradas para ‘Dirigindo: Não’ e refaça esta ação."
-                       );
-                       return;
-                     }
-                   }
-
-                   setIsDriving(val);
-                   // Persistir estado na viagem (Supabase ou localStorage via hook) e atualizar visão
-                   (updateTripProp ? updateTripProp : async (id: string, updates: Partial<Trip>) => Promise.resolve(updates as any))(selectedTrip.id, { isDriving: val })
-                     .then(async () => {
-                       try { await refresh?.(); } catch {}
-                     })
-                     .catch((e) => {
-                       console.warn("Falha ao atualizar isDriving", e);
-                     });
-                   if (!val) {
-                     // Ao desativar dirigir: remover veículos e zerar KM inicial
-                     onRemoveVehicleFromTrip?.(selectedTrip.id);
-                     onUpdateStartKm?.(selectedTrip.id, 0);
-                   }
-                 }}
-              />
-            </div>
-          </div>
+          {/* is_driving por viagem removido: controle por parada */}
 
           {/* 👇 Seção de Veículo */}
-          {(isDriving) && (
+          {true && (
             <div className="border-t border-gray-200 pt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1427,10 +1400,6 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
           <div className="flex items-center justify-between">
             <button
               onClick={() => {
-                if (isDriving && !(selectedTrip?.vehicleIds?.length)) {
-                  setShowVehicleWarning(true);
-                  return;
-                }
                 setEditingStop(null);
                 setShowStopModal(true);
               }}
@@ -1447,7 +1416,23 @@ import type { Trip, Vehicle, TripVehicleSegment } from "./useTrips";
           </div>
           {/* Lista simples de paradas — agora posicionada abaixo dos botões */}
           <div className="border-t border-gray-200 pt-4 mt-4">
-            <p className="text-xs text-gray-500 mb-1 font-medium">Paradas</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-gray-500 font-medium">Paradas</p>
+              <div className="flex gap-1">
+                <button
+                  className={`px-2 py-1 rounded text-xs ${stopFilter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700'}`}
+                  onClick={() => setStopFilter('all')}
+                >Todos</button>
+                <button
+                  className={`px-2 py-1 rounded text-xs ${stopFilter === 'driving' ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                  onClick={() => setStopFilter('driving')}
+                >Dirigindo</button>
+                <button
+                  className={`px-2 py-1 rounded text-xs ${stopFilter === 'not_driving' ? 'bg-fuchsia-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                  onClick={() => setStopFilter('not_driving')}
+                >Não dirigindo</button>
+              </div>
+            </div>
             {(stopEntries.length === 0) ? (
               <p className="text-sm text-gray-600">Nenhuma parada registrada ainda.</p>
             ) : (
